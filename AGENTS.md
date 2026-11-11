@@ -19,6 +19,7 @@ The owner is a student who must demo this and explain it in a viva. Working, sim
 - Actually run what you build (scripts, tests, the server). Never report something as working unless you ran it. If you could not run it, say so.
 - Update the "Progress" checklist at the bottom of `PLAN.md` when a phase is finished.
 - Keep `README.md` current with setup and run commands as they come into existence.
+- When a phase passes its "done when" check, commit it with a message starting `Phase N:` and push to `origin main` (private GitHub repo). Never commit `data/`, `models/` or `.venv/`.
 
 ## Tech stack (do not swap without asking)
 
