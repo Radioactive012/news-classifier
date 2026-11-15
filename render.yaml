@@ -1,0 +1,18 @@
+# Render Blueprint for the AI backend (free plan, 512 MB).
+# Uses the light ONNX engine: PyTorch is not installed, the models are
+# downloaded from Hugging Face during the build (see scripts/download_models.py).
+services:
+  - type: web
+    name: news-classifier-api
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements-server.txt && python scripts/download_models.py
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: ALLOWED_ORIGINS
+        value: https://news-classifier.assetdesk-archive-20261016.workers.dev

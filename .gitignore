@@ -11,3 +11,4 @@ frontend/dist/
 reports/*.log
 /models_v1/
 deploy/hf-space/build/
+.wrangler/

@@ -1,0 +1,11 @@
+// Cloudflare Workers static-assets hosting for the built frontend (free).
+// Deploy:  VITE_API_URL=<backend url> npm run build && npx wrangler deploy
+{
+  "name": "news-classifier",
+  "compatibility_date": "2026-11-13",
+  "assets": {
+    "directory": "./dist",
+    // Send unknown paths (e.g. /performance on refresh) to index.html for React Router.
+    "not_found_handling": "single-page-application"
+  }
+}

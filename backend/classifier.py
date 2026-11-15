@@ -1,6 +1,8 @@
 """Loads the trained models once and turns article text into predictions."""
 
+import importlib.util
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -12,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL_DIR = ROOT / "models"
 BASELINE_PATH = MODEL_DIR / "baseline.joblib"
 DISTILBERT_DIR = MODEL_DIR / "distilbert"
+# Compressed copy for the online server (see training/export_onnx.py).
+ONNX_DIR = MODEL_DIR / "distilbert_onnx"
 
 MODEL_NAMES = {
     "combined": "DistilBERT + TF-IDF (combined)",
@@ -33,6 +37,7 @@ class Classifier:
         self.baseline = None
         self.tokenizer = None
         self.bert = None
+        self.engine = None  # "pytorch" or "onnx"
         self.max_length = 256
         self.labels: list[str] = []
         self.load()
@@ -42,20 +47,42 @@ class Classifier:
             self.baseline = joblib.load(BASELINE_PATH)
             self.labels = list(self.baseline.classes_)
 
-        if (DISTILBERT_DIR / "config.json").exists():
-            # Imported here so the API can still start (baseline only) if
-            # PyTorch is not installed.
-            import torch
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
+        # Use PyTorch when it is installed (local development), otherwise the
+        # lighter ONNX Runtime (the online server). NEWS_ENGINE=onnx forces ONNX.
+        want_onnx = os.environ.get("NEWS_ENGINE") == "onnx" or importlib.util.find_spec("torch") is None
+        if not want_onnx and (DISTILBERT_DIR / "config.json").exists():
+            self._load_pytorch()
+        elif (ONNX_DIR / "model.onnx").exists():
+            self._load_onnx()
 
-            torch.set_grad_enabled(False)
-            self.tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_DIR)
-            # CPU is fast enough for one article at a time and works on every machine.
-            self.bert = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).eval()
-            self.labels = [self.bert.config.id2label[i] for i in range(self.bert.config.num_labels)]
-            history = DISTILBERT_DIR / "training_history.json"
-            if history.exists():
-                self.max_length = json.loads(history.read_text(encoding="utf-8"))["max_length"]
+    def _load_pytorch(self) -> None:
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        torch.set_grad_enabled(False)
+        self.tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_DIR)
+        # CPU is fast enough for one article at a time and works on every machine.
+        self.bert = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).eval()
+        self.labels = [self.bert.config.id2label[i] for i in range(self.bert.config.num_labels)]
+        history = DISTILBERT_DIR / "training_history.json"
+        if history.exists():
+            self.max_length = json.loads(history.read_text(encoding="utf-8"))["max_length"]
+        self.engine = "pytorch"
+
+    def _load_onnx(self) -> None:
+        import onnxruntime
+        from tokenizers import Tokenizer
+
+        info = json.loads((ONNX_DIR / "labels.json").read_text(encoding="utf-8"))
+        self.labels, self.max_length = info["labels"], info["max_length"]
+        self.tokenizer = Tokenizer.from_file(str(ONNX_DIR / "tokenizer.json"))
+        self.tokenizer.no_padding()
+        self.tokenizer.enable_truncation(self.max_length)
+        options = onnxruntime.SessionOptions()
+        options.intra_op_num_threads = 1  # small servers have a fraction of one CPU
+        options.enable_cpu_mem_arena = False  # keeps memory low on the 512 MB free plan
+        self.bert = onnxruntime.InferenceSession(str(ONNX_DIR / "model.onnx"), options, providers=["CPUExecutionProvider"])
+        self.engine = "onnx"
 
     @property
     def available(self) -> dict[str, bool]:
@@ -98,6 +125,17 @@ class Classifier:
         }
 
     def _predict_bert(self, text: str) -> tuple[dict[str, float], bool]:
+        if self.engine == "onnx":
+            encoding = self.tokenizer.encode(text)
+            feed = {
+                "input_ids": np.array([encoding.ids], dtype=np.int64),
+                "attention_mask": np.array([encoding.attention_mask], dtype=np.int64),
+            }
+            logits = self.bert.run(["logits"], feed)[0][0]
+            scores = np.exp(logits - logits.max())
+            scores /= scores.sum()
+            return {label: float(s) for label, s in zip(self.labels, scores)}, bool(encoding.overflowing)
+
         import torch
 
         # The network reads at most max_length tokens (the headline and opening
