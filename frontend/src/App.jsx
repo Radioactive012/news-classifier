@@ -18,6 +18,8 @@ export default function App() {
   // 'hidden' | 'waking' | 'ready' | 'dismissed': the wake-up game panel
   const [panel, setPanel] = useState('hidden')
   const ready = Boolean(health && !health.error)
+  // When the health checks started failing, to tell "waking up" from "down".
+  const [failingSince, setFailingSince] = useState(null)
 
   useEffect(() => {
     let timer
@@ -27,9 +29,11 @@ export default function App() {
       let ok = false
       try {
         setHealth(await getHealth())
+        setFailingSince(null)
         ok = true
       } catch (error) {
         setHealth({ error: error.message })
+        setFailingSince((since) => since ?? Date.now())
       }
       if (!stopped) timer = setTimeout(check, ok ? 15000 : 4000)
     }
@@ -48,8 +52,12 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [ready, panel])
 
+  // When the AI comes online, show "awake" for a moment, then close the game.
   useEffect(() => {
     if (ready && panel === 'waking') setPanel('ready')
+    if (panel !== 'ready') return
+    const timer = setTimeout(() => setPanel('dismissed'), 2000)
+    return () => clearTimeout(timer)
   }, [ready, panel])
 
   return (
@@ -86,7 +94,7 @@ export default function App() {
               </NavLink>
             ))}
           </nav>
-          <BackendStatus health={health} />
+          <BackendStatus health={health} failingSince={failingSince} />
         </div>
       </header>
 
@@ -106,11 +114,15 @@ export default function App() {
   )
 }
 
-function BackendStatus({ health }) {
-  const state = !health ? 'checking' : health.error ? 'offline' : health.models.distilbert ? 'online' : 'partial'
+function BackendStatus({ health, failingSince }) {
+  // A free server that is waking up fails health checks for about a minute,
+  // so only call it offline after 3 minutes of failures.
+  const down = failingSince && Date.now() - failingSince > 3 * 60 * 1000
+  const state = !health ? 'checking' : health.error ? (down ? 'offline' : 'waking') : health.models.distilbert ? 'online' : 'partial'
   const [dot, text] = {
     checking: ['bg-stone-400', 'Connecting…'],
-    offline: ['bg-red-500', 'Backend offline'],
+    waking: ['bg-amber-400', 'Waking up the AI…'],
+    offline: ['bg-red-500', 'AI offline'],
     partial: ['bg-amber-400', 'Baseline only'],
     online: ['bg-lime-400', 'AI ready'],
   }[state]
@@ -121,7 +133,7 @@ function BackendStatus({ health }) {
       role="status"
     >
       <span className="relative flex size-2.5">
-        {state === 'online' && <span className={`absolute inline-flex size-full animate-ping rounded-full ${dot} opacity-75`} />}
+        {(state === 'online' || state === 'waking') && <span className={`absolute inline-flex size-full animate-ping rounded-full ${dot} opacity-75`} />}
         <span className={`relative inline-flex size-2.5 rounded-full border border-ink ${dot}`} />
       </span>
       {text}

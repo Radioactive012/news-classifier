@@ -27,11 +27,11 @@ export default function WakeUpPanel({ ready, failed, onClose }) {
 
         <div className="p-5">
           <h2 id="wake-title" className="font-display text-2xl leading-tight font-extrabold sm:text-3xl">
-            {ready ? 'All set. Go classify some news!' : 'The AI is having its morning coffee ☕'}
+            {ready ? 'The AI is awake! ✨' : 'The AI is having its morning coffee ☕'}
           </h2>
           <p className="mt-2 text-sm text-ink/70 text-pretty">
             {ready
-              ? 'The neural network is loaded and ready. Finish your run or jump straight in.'
+              ? 'All set. Taking you back to the newsroom…'
               : failed
                 ? 'Still knocking on the server’s door. Free servers sleep after 15 quiet minutes and take about a minute to wake up. Beat a high score while you wait.'
                 : 'This site runs on a free server that naps when nobody is around. Waking it takes about a minute, so beat a high score while you wait.'}

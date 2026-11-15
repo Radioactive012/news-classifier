@@ -10,7 +10,9 @@ async function request(path, options) {
     response = await fetch(`${API_URL}${path}`, options)
   } catch {
     throw new ApiError(
-      'Cannot reach the backend. Start it with: uvicorn backend.main:app --port 8000',
+      import.meta.env.DEV
+        ? 'Cannot reach the backend. Start it with: uvicorn backend.main:app --port 8000'
+        : 'The AI server is waking up (it naps when nobody is around). Give it a minute and try again.',
     )
   }
   const body = await response.json().catch(() => ({}))
