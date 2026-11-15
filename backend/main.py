@@ -5,6 +5,7 @@ Interactive API docs:       http://localhost:8000/docs
 """
 
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -35,7 +36,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="News Article Classifier", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    # Extra origins (e.g. the deployed frontend's URL) come from the
+    # ALLOWED_ORIGINS environment variable, comma-separated.
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"]
+    + [origin.strip() for origin in os.environ.get("ALLOWED_ORIGINS", "").split(",") if origin.strip()],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
