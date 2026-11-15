@@ -2,7 +2,11 @@
 
 @theme {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
+  --font-display: "Bricolage Grotesque Variable", "Inter Variable", ui-sans-serif, sans-serif;
+
+  --color-paper: #fdf6e3;
+  --color-ink: #1c1917;
+  --color-sun: #fde047;
 }
 
 :root {
@@ -10,26 +14,95 @@
 }
 
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+  @apply bg-paper text-ink antialiased;
+  /* Faint halftone dots, like newsprint */
+  background-image: radial-gradient(rgb(28 25 23 / 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
 /* Visible keyboard focus everywhere */
 :focus-visible {
-  outline: 2px solid var(--color-stone-900);
+  outline: 3px solid var(--color-ink);
   outline-offset: 2px;
 }
 
+@layer components {
+  /* Chunky "comic panel" card: ink border + hard offset shadow */
+  .card {
+    @apply rounded-2xl border-2 border-ink bg-white shadow-[5px_5px_0_0_var(--color-ink)];
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ink px-4 py-2.5 text-sm font-bold
+      shadow-[3px_3px_0_0_var(--color-ink)] transition-all duration-100
+      hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_0_var(--color-ink)]
+      active:translate-x-[3px] active:translate-y-[3px] active:shadow-none
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[3px_3px_0_0_var(--color-ink)];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border-2 border-ink px-3 py-1 text-sm font-semibold;
+  }
+
+  .label {
+    @apply text-xs font-bold uppercase tracking-widest text-ink/60;
+  }
+}
+
+/* ---- Animations ---- */
+
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
-.animate-rise {
-  animation: rise 0.35s ease-out both;
+.animate-rise { animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* The result badge lands like a rubber stamp */
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(2.2) rotate(-14deg); }
+  60% { opacity: 1; transform: scale(0.92) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
 }
+.animate-stamp { animation: stamp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Breaking-news ticker */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-ticker { animation: ticker 40s linear infinite; }
+.animate-ticker:hover { animation-play-state: paused; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-8px) rotate(var(--r, 0deg)); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+/* Confetti pieces fly out from the result */
+@keyframes confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--spin)); }
+}
+.confetti-piece { animation: confetti 1s cubic-bezier(0.1, 0.7, 0.3, 1) forwards; }
+
+/* Scanner line in the loading state */
+@keyframes scan {
+  0%, 100% { top: 8%; }
+  50% { top: 86%; }
+}
+.animate-scan { animation: scan 1.6s ease-in-out infinite; }
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-grow { transform-origin: left; animation: grow 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

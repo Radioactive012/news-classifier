@@ -305,11 +305,11 @@ A **backend** is a program that runs on a computer (server) and answers requests
 |---|---|
 | `POST /predict` | Send `{"text": "...", "model": "combined"}` and get back the category, confidence, all 5 probabilities, "also related" topics, key words and time taken. `model` can also be `distilbert` or `baseline` |
 | `GET /metrics` | Returns the test results (from `reports/metrics.json`) for the performance page |
-| `GET /health` | "Are you alive, and which models are loaded?" Powers the green "Models ready" dot |
+| `GET /health` | "Are you alive, and which models are loaded?" Powers the green "AI ready" dot |
 
 **Safety checks:** it rejects empty text or text under 20 words with a clear message, and long articles are cut to 512 tokens rather than rejected.
 
-**Key words feature:** the "Words linked to sport" chips come from the baseline model. For each word in your text, it multiplies the word's TF-IDF score by its learned weight for the predicted category and shows the top ones. It's a simple form of **explainable AI**: showing *why* a model decided.
+**Key words feature:** the "Clue words" chips come from the baseline model. For each word in your text, it multiplies the word's TF-IDF score by its learned weight for the predicted category and shows the top ones. It's a simple form of **explainable AI**: showing *why* a model decided.
 
 **Interactive docs:** with the backend running, open `http://localhost:8000/docs` to try the API in your browser. This is a great thing to show examiners.
 
@@ -323,19 +323,22 @@ Folder: `frontend/`. Built with:
 - **Tailwind CSS:** styling (colours, spacing, layout) written as short class names.
 - **Recharts:** draws the training chart.
 
+### The look
+A playful "pop newspaper" style: cream paper background with faint newsprint dots, thick black outlines, chunky shadows, and a bright colour per category (⚽ lime, 🏛️ red, 💼 blue, 💻 purple, 🎬 pink). A red **LIVE** ticker scrolls the sample headlines across the top.
+
 ### The 3 pages
 1. **Classify (home)**
    - Text box with a word counter.
    - "Try a sample" buttons: 5 articles written for this project, so they're not in the training data.
-   - Model switch (Combined, the default ↔ DistilBERT ↔ TF-IDF), which re-runs instantly so you can compare.
-   - "Also related" chips when an article covers a second topic.
-   - Result card: coloured badge, confidence %, bars for all 5 categories, key words, time taken.
-   - A warning if confidence is under 60% ("may cover more than one topic").
-   - Recent predictions history, saved in your browser.
-2. **Model performance:** accuracy cards, per-category table, confusion matrices, training chart.
-3. **About:** the problem, how it works in 3 steps, the dataset, limitations, tech stack.
+   - **Pick a brain:** Combined (default), DistilBERT or TF-IDF. Switching re-runs instantly so you can compare.
+   - **While it thinks:** the AI's real steps tick off one by one (chop into tokens → DistilBERT reads → TF-IDF counts words → average). Great for explaining the pipeline in a demo.
+   - **The verdict:** the category lands like a rubber stamp in a panel of its colour, with confetti when the AI is 80%+ sure, the confidence %, bars for all 5 categories, "Also related" chips, clue words, and the time taken.
+   - A warning if confidence is under 60% ("might cover more than one topic").
+   - Recent predictions as little cards, saved in your browser.
+2. **Performance:** the three models' report cards (with BBC vs HuffPost bars), "the glow-up" (68% → 88% on modern news after adding HuffPost), a per-category table with the best score highlighted, confusion matrices, and the training chart.
+3. **How it works:** the problem statement, the 3 steps as comic panels (with example tokens and mini bars), the datasets, the three models, limitations and tools.
 
-It also handles **loading states** (grey placeholder while waiting), **errors** ("Backend offline"), and works on **phones**.
+It also handles **errors** ("Backend offline", 😵 card with a retry button), works on **phones**, and turns off animations for people who set "reduce motion" on their device.
 
 ---
 

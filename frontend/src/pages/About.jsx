@@ -3,16 +3,23 @@ import { CATEGORIES } from '../categories.js'
 
 const STEPS = [
   {
-    title: 'Tokenise the article',
-    body: 'The text is split into word pieces (“tokens”) from a 30,000-piece vocabulary, so even unknown words like “smartwatch” become “smart” + “##watch”. The first 512 tokens (about 380 words) are kept.',
+    emoji: '✂️',
+    color: 'bg-sky-300',
+    title: 'Chop it into tokens',
+    body: 'The text is split into word pieces from a 30,000-piece vocabulary. Unknown words get split up, so “smartwatch” becomes “smart” + “##watch”.',
+    demo: ['arsenal', 'beat', 'chelsea', '2', '-', '1', 'smart', '##watch'],
   },
   {
-    title: 'Read it with DistilBERT',
-    body: 'A 6-layer Transformer neural network with 66 million parameters reads all tokens at once. Self-attention lets every word look at every other word, so “bank” means something different next to “river” and next to “interest rates”.',
+    emoji: '🧠',
+    color: 'bg-violet-300',
+    title: 'DistilBERT reads it',
+    body: 'A 6-layer Transformer with 66 million parameters reads every token at once. Self-attention lets each word look at all the others, so “bank” next to “river” ≠ “bank” next to “interest rates”.',
   },
   {
-    title: 'Pick the category',
-    body: 'A final classification layer turns the network’s understanding into one score per category. Softmax converts the scores into probabilities that add up to 100%, and the highest one is the answer.',
+    emoji: '🏆',
+    color: 'bg-lime-300',
+    title: 'Pick a winner',
+    body: 'A final layer gives one score per category. Softmax turns the scores into probabilities that add up to 100%, and the biggest one wins.',
   },
 ]
 
@@ -20,103 +27,157 @@ export default function About() {
   return (
     <div className="space-y-14">
       <section className="max-w-3xl">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h1>
-        <p className="mt-4 text-lg text-stone-600 text-pretty">
-          <strong className="font-semibold text-stone-900">Problem statement:</strong> automatically classify news
-          articles into categories such as sports, politics, business and technology.
-        </p>
-        <p className="mt-3 text-stone-600 text-pretty">
-          Newsrooms, aggregators and search engines receive thousands of stories a day. Sorting them by hand is slow,
-          so this project trains a neural network to do it in a fraction of a second.
+        <p className="label mb-3">🧠 Under the hood</p>
+        <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl">How does it work?</h1>
+        <div className="card mt-6 -rotate-1 bg-sun p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-ink/60">The problem statement</p>
+          <p className="mt-1 font-display text-xl leading-snug font-bold sm:text-2xl">
+            “Automatically classify news articles into categories such as sports, politics, business and technology.”
+          </p>
+        </div>
+        <p className="mt-6 text-lg text-ink/70 text-pretty">
+          Newsrooms get thousands of stories a day. Sorting them by hand is slow and boring, so we trained a neural network
+          to do it in a fraction of a second.
         </p>
       </section>
 
       <section>
-        <h2 className="mb-5 font-serif text-2xl font-semibold">From article to category in three steps</h2>
-        <ol className="grid gap-4 md:grid-cols-3">
+        <h2 className="mb-6 font-display text-3xl font-extrabold tracking-tight">From article to answer in 3 steps</h2>
+        <ol className="grid gap-6 md:grid-cols-3">
           {STEPS.map((step, i) => (
-            <li key={step.title} className="relative rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-              <span className="grid size-9 place-items-center rounded-full bg-stone-900 font-serif text-lg font-semibold text-white">{i + 1}</span>
-              <h3 className="mt-4 font-semibold">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-stone-600">{step.body}</p>
+            <li key={step.title} className="card relative overflow-hidden" style={{ transform: `rotate(${[-1, 0.8, -0.6][i]}deg)` }}>
+              <div className={`flex items-center gap-3 border-b-2 border-ink px-5 py-3 ${step.color}`}>
+                <span className="grid size-9 place-items-center rounded-full border-2 border-ink bg-white font-display text-lg font-extrabold">{i + 1}</span>
+                <h3 className="font-display text-lg font-extrabold">{step.title}</h3>
+                <span className="ml-auto text-3xl" aria-hidden="true">{step.emoji}</span>
+              </div>
+              <div className="p-5">
+                <p className="text-sm leading-relaxed text-ink/80">{step.body}</p>
+                {step.demo && (
+                  <div className="mt-4 flex flex-wrap gap-1">
+                    {step.demo.map((token, j) => (
+                      <code key={j} className="rounded border-2 border-ink bg-paper px-1.5 py-0.5 text-xs font-bold">{token}</code>
+                    ))}
+                  </div>
+                )}
+                {i === 2 && <MiniBars />}
+              </div>
             </li>
           ))}
         </ol>
         <Pipeline />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <Card title="The dataset">
-          <p>
-            Two datasets, 12,104 articles in total, in five categories:
-          </p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5">
-            <li>
-              <strong>BBC News</strong> (Greene &amp; Cunningham, 2006): 2,104 full articles from 2004–05, after removing
-              duplicates.
+      <section className="grid gap-6 md:grid-cols-2">
+        <Card emoji="📚" title="What it learned from">
+          <p>Two datasets, <b>12,104 articles</b> in total:</p>
+          <ul className="mt-3 space-y-3">
+            <li className="rounded-xl border-2 border-ink/15 bg-paper/60 p-3">
+              <b>📻 BBC News</b> (Greene &amp; Cunningham, 2006)
+              <span className="block text-ink/70">2,104 full articles from 2004–05</span>
             </li>
-            <li>
-              <strong>HuffPost News Category</strong> (Misra, 2022): 10,000 headlines with a short summary from 2012–22,
-              2,000 per category, so the model also knows modern topics.
+            <li className="rounded-xl border-2 border-ink/15 bg-paper/60 p-3">
+              <b>📱 HuffPost News Category</b> (Misra, 2022)
+              <span className="block text-ink/70">10,000 headlines + summaries from 2012–22, so it knows modern topics</span>
             </li>
           </ul>
-          <p className="mt-2">Each is split 80% for training, 10% for validation (choosing the best epoch) and 10% for the final test.</p>
+          <p className="mt-3">Each was split 80% to learn from, 10% to pick the best version, 10% for the final exam.</p>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {Object.entries(CATEGORIES).map(([key, item]) => (
-              <span key={key} className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${item.soft}`}>{item.emoji} {item.name}</span>
+              <span key={key} className={`chip py-0.5 text-xs ${item.tint}`}>{item.emoji} {item.name}</span>
             ))}
           </div>
         </Card>
-        <Card title="Two models, compared">
-          <p>
-            <strong>DistilBERT</strong> is a smaller, faster version of Google’s BERT, pre-trained on Wikipedia and
-            books, then fine-tuned here for 3 epochs on the news articles. It understands word order and context.
-          </p>
-          <p className="mt-3">
-            <strong>TF-IDF + Logistic Regression</strong> is the classical baseline: it counts how distinctive each word
-            is and learns a weight per word. It is fast and surprisingly strong, which makes it a fair yardstick.{' '}
-            <Link to="/performance" className="font-medium text-stone-900 underline underline-offset-2">See the results →</Link>
-          </p>
+        <Card emoji="🥊" title="The contenders">
+          <div className="space-y-3">
+            <p>
+              <b>🧠 DistilBERT</b>: a smaller, faster version of Google’s BERT. Pre-trained on Wikipedia and books, then
+              fine-tuned on our news. Understands word order and context.
+            </p>
+            <p>
+              <b>🔢 TF-IDF + Logistic Regression</b>: the old-school baseline. Scores how distinctive each word is and learns
+              a weight per word. Fast and surprisingly strong.
+            </p>
+            <p>
+              <b>🤝 Combined</b>: averages the two. DistilBERT brings brains, TF-IDF keeps its confidence honest, and this is
+              what the app uses.
+            </p>
+          </div>
+          <Link to="/performance" className="btn mt-5 bg-sun">See who wins →</Link>
         </Card>
-        <Card title="Limitations">
-          <ul className="list-disc space-y-1.5 pl-5">
-            <li>The newest training news is from 2022, so events and names since then may be misread.</li>
-            <li>Each article gets exactly one label, even when it covers two topics, such as a footballer’s tax case.</li>
-            <li>Only five categories exist: a science or health story will be forced into the closest one.</li>
-            <li>DistilBERT reads only the first 512 tokens (about 380 words) of very long articles.</li>
+        <Card emoji="⚠️" title="What it’s not great at">
+          <ul className="space-y-2">
+            <li>🗓️ Newest training news is from 2022, so newer events and names may confuse it.</li>
+            <li>🎭 One label per article, even when a story is about two things (it shows “also related” to help).</li>
+            <li>🧪 Only five categories, so a science or health story gets squeezed into the closest one.</li>
+            <li>📏 DistilBERT reads only the first 512 tokens (~380 words) of very long articles.</li>
           </ul>
         </Card>
-        <Card title="Built with">
-          <dl className="grid grid-cols-[7rem_1fr] gap-y-2">
-            <dt className="text-stone-500">Neural model</dt><dd>PyTorch, Hugging Face Transformers</dd>
-            <dt className="text-stone-500">Baseline</dt><dd>scikit-learn</dd>
-            <dt className="text-stone-500">Backend</dt><dd>Python, FastAPI</dd>
-            <dt className="text-stone-500">Frontend</dt><dd>React, Vite, Tailwind CSS, Recharts</dd>
-          </dl>
+        <Card emoji="🛠️" title="Built with">
+          <div className="flex flex-wrap gap-2">
+            {['🐍 Python', '🔥 PyTorch', '🤗 Transformers', '📐 scikit-learn', '⚡ FastAPI', '⚛️ React', '🌬️ Tailwind CSS', '📈 Recharts'].map((tool) => (
+              <span key={tool} className="chip bg-white">{tool}</span>
+            ))}
+          </div>
         </Card>
       </section>
     </div>
   )
 }
 
-function Card({ title, children }) {
+function Card({ emoji, title, children }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm leading-relaxed text-stone-700 shadow-sm">
-      <h3 className="mb-3 font-serif text-lg font-semibold text-stone-900">{title}</h3>
+    <div className="card p-6 text-sm leading-relaxed">
+      <h3 className="mb-4 font-display text-xl font-extrabold">
+        <span aria-hidden="true">{emoji}</span> {title}
+      </h3>
       {children}
     </div>
   )
 }
 
-function Pipeline() {
-  const nodes = ['News article', 'Tokenizer', 'DistilBERT', 'Softmax', 'Category']
+function MiniBars() {
+  const bars = [
+    ['⚽', 'Sport', 94, 'bg-lime-400'],
+    ['💼', 'Business', 3, 'bg-ink/25'],
+    ['🏛️', 'Politics', 2, 'bg-ink/25'],
+  ]
   return (
-    <div className="mt-6 overflow-x-auto rounded-2xl border border-dashed border-stone-300 p-4">
-      <ol className="flex min-w-max items-center gap-2 text-sm" aria-label="Pipeline">
-        {nodes.map((node, i) => (
+    <div className="mt-4 space-y-1.5" aria-hidden="true">
+      {bars.map(([emoji, name, value, color]) => (
+        <div key={name} className="flex items-center gap-2 text-xs font-bold">
+          <span className="w-5">{emoji}</span>
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full border-2 border-ink bg-paper">
+            <div className={`h-full ${color}`} style={{ width: `${value}%` }} />
+          </div>
+          <span className="w-8 text-right tabular-nums">{value}%</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Pipeline() {
+  const nodes = [
+    ['📰', 'Article'],
+    ['✂️', 'Tokenizer'],
+    ['🧠', 'DistilBERT'],
+    ['📊', 'Softmax'],
+    ['🏷️', 'Category'],
+  ]
+  return (
+    <div className="mt-8 overflow-x-auto pb-2">
+      <ol className="mx-auto flex w-max items-center gap-2 text-sm" aria-label="Pipeline">
+        {nodes.map(([emoji, node], i) => (
           <li key={node} className="flex items-center gap-2">
-            <span className={`rounded-lg px-3 py-2 font-medium ${i === 2 ? 'bg-stone-900 text-white' : 'bg-white ring-1 ring-stone-200'}`}>{node}</span>
-            {i < nodes.length - 1 && <span className="text-stone-400" aria-hidden="true">→</span>}
+            <span
+              className={`rounded-xl border-2 border-ink px-3 py-2 font-bold shadow-[3px_3px_0_0_var(--color-ink)] ${
+                i === 2 ? 'bg-ink text-white' : 'bg-white'
+              }`}
+            >
+              {emoji} {node}
+            </span>
+            {i < nodes.length - 1 && <span className="font-display text-xl font-extrabold" aria-hidden="true">→</span>}
           </li>
         ))}
       </ol>

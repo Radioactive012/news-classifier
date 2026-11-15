@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { getHealth } from './api.js'
+import { category } from './categories.js'
+import { SAMPLES } from './samples.js'
 import Classify from './pages/Classify.jsx'
 import Performance from './pages/Performance.jsx'
 import About from './pages/About.jsx'
 
 const LINKS = [
-  { to: '/', label: 'Classify' },
-  { to: '/performance', label: 'Model performance' },
-  { to: '/about', label: 'About' },
+  { to: '/', label: 'Classify', emoji: '🔍' },
+  { to: '/performance', label: 'Performance', emoji: '📊' },
+  { to: '/about', label: 'How it works', emoji: '🧠' },
 ]
 
 export default function App() {
@@ -27,25 +29,33 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-          <NavLink to="/" className="flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-lg bg-stone-900 font-serif text-lg font-semibold text-white">N</span>
-            <span className="font-serif text-lg font-semibold tracking-tight">News Classifier</span>
+      <Ticker />
+      <header className="sticky top-0 z-20 border-b-2 border-ink bg-paper/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
+          <NavLink to="/" className="group flex items-center gap-2.5">
+            <span className="grid size-10 -rotate-6 place-items-center rounded-xl border-2 border-ink bg-sun text-xl shadow-[3px_3px_0_0_var(--color-ink)] transition group-hover:rotate-6">
+              📰
+            </span>
+            <span className="font-display text-xl leading-none font-extrabold tracking-tight">
+              News <span className="text-red-500">Classifier</span>
+              <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-ink/50">AI news classifier</span>
+            </span>
           </NavLink>
-          <nav className="order-last -mx-1 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
+          <nav className="order-last -mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-1 sm:order-none sm:w-auto sm:pb-0">
             {LINKS.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 end
                 className={({ isActive }) =>
-                  `whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    isActive ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-200/70 hover:text-stone-900'
+                  `whitespace-nowrap rounded-full border-2 px-3.5 py-1.5 text-sm font-bold transition ${
+                    isActive
+                      ? 'border-ink bg-ink text-white'
+                      : 'border-transparent text-ink/70 hover:border-ink hover:bg-white hover:text-ink'
                   }`
                 }
               >
-                {link.label}
+                <span aria-hidden="true">{link.emoji}</span> {link.label}
               </NavLink>
             ))}
           </nav>
@@ -53,34 +63,63 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Routes>
           <Route path="/" element={<Classify health={health} />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/about" element={<About />} />
-          <Route path="*" element={<p className="text-stone-600">Page not found.</p>} />
+          <Route path="*" element={<p className="font-display text-2xl font-bold">404: this page didn’t make the paper.</p>} />
         </Routes>
       </main>
 
-      <footer className="border-t border-stone-200 py-6 text-center text-xs text-stone-500">
-        News article classification with a fine-tuned DistilBERT neural network · College AI project
+      <footer className="border-t-2 border-ink bg-ink py-6 text-center text-sm text-white/70">
+        Built with a fine-tuned <span className="font-semibold text-sun">DistilBERT</span> neural network · College AI project
       </footer>
+    </div>
+  )
+}
+
+// A scrolling "breaking news" strip made of the sample headlines.
+function Ticker() {
+  const items = [...SAMPLES, ...SAMPLES]
+  return (
+    <div className="overflow-hidden border-b-2 border-ink bg-red-500 text-white" aria-hidden="true">
+      <div className="flex">
+        <span className="z-10 shrink-0 bg-ink px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-sun">
+          ● Live
+        </span>
+        <div className="flex animate-ticker whitespace-nowrap py-1.5 text-xs font-semibold">
+          {items.map((sample, i) => (
+            <span key={i} className="mx-6">
+              <span className="mr-2 rounded bg-white/20 px-1.5 py-0.5 uppercase">{category(sample.label).emoji} {category(sample.label).name}</span>
+              {sample.title}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
 function BackendStatus({ health }) {
   const state = !health ? 'checking' : health.error ? 'offline' : health.models.distilbert ? 'online' : 'partial'
-  const styles = {
+  const [dot, text] = {
     checking: ['bg-stone-400', 'Connecting…'],
-    offline: ['bg-rose-500', 'Backend offline'],
-    partial: ['bg-amber-500', 'Baseline only'],
-    online: ['bg-emerald-500', 'Models ready'],
+    offline: ['bg-red-500', 'Backend offline'],
+    partial: ['bg-amber-400', 'Baseline only'],
+    online: ['bg-lime-400', 'AI ready'],
   }[state]
   return (
-    <div className="ml-auto flex items-center gap-2 text-xs font-medium text-stone-600" title={health?.error ?? ''} role="status">
-      <span className={`size-2 rounded-full ${styles[0]} ${state === 'online' ? 'shadow-[0_0_0_3px] shadow-emerald-500/20' : ''}`} />
-      {styles[1]}
+    <div
+      className="ml-auto flex items-center gap-2 rounded-full border-2 border-ink bg-white px-3 py-1 text-xs font-bold"
+      title={health?.error ?? ''}
+      role="status"
+    >
+      <span className="relative flex size-2.5">
+        {state === 'online' && <span className={`absolute inline-flex size-full animate-ping rounded-full ${dot} opacity-75`} />}
+        <span className={`relative inline-flex size-2.5 rounded-full border border-ink ${dot}`} />
+      </span>
+      {text}
     </div>
   )
 }

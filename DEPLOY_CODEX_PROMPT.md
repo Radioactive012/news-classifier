@@ -38,7 +38,7 @@ Steps, stopping after each to show me what you did and how you checked it:
    - Use wrangler via npx. Ask me to run `npx wrangler login` myself.
    - Build the frontend with VITE_API_URL set to the Space URL, then deploy frontend/dist with `npx wrangler pages deploy frontend/dist --project-name news-classifier`.
    - Add frontend/public/_redirects containing `/* /index.html 200` so /performance and /about work on refresh.
-   - Open the Pages URL and check: the status dot says "Models ready", every sample classifies correctly, the Model performance page shows numbers, and refreshing /about works.
+   - Open the Pages URL and check: the status dot in the header says "AI ready", every sample classifies correctly, the Model performance page shows numbers, and refreshing /about works.
 
 4. Docs
    - Add a "Live demo" section to README.md with both URLs and a "Deploying" section with the exact commands you used.

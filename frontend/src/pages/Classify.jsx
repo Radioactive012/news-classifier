@@ -5,7 +5,7 @@ import { SAMPLES } from '../samples.js'
 
 const MIN_WORDS = 20
 const HISTORY_KEY = 'news-classifier-history'
-const HISTORY_SIZE = 8
+const HISTORY_SIZE = 6
 
 function loadHistory() {
   try {
@@ -50,13 +50,18 @@ export default function Classify({ health }) {
     if (countWords(articleText) < MIN_WORDS || loading) return
     setLoading(true)
     setError('')
+    // On phones the result is below the text box, so bring it into view.
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
     try {
-      const prediction = await classify(articleText, modelId)
+      // Wait at least a moment so the "AI is thinking" steps are visible.
+      const [prediction] = await Promise.all([classify(articleText, modelId), new Promise((r) => setTimeout(r, 900))])
       setResult(prediction)
       const entry = {
         id: Date.now(),
         text: articleText,
-        snippet: articleText.trim().slice(0, 140),
+        snippet: articleText.trim().slice(0, 110),
         category: prediction.category,
         confidence: prediction.confidence,
         model: prediction.model,
@@ -64,10 +69,6 @@ export default function Classify({ health }) {
       const next = [entry, ...history.filter((item) => item.text !== articleText || item.model !== modelId)].slice(0, HISTORY_SIZE)
       setHistory(next)
       saveHistory(next)
-      // On phones the result is below the text box, so bring it into view.
-      if (window.matchMedia('(max-width: 1023px)').matches) {
-        requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-      }
     } catch (err) {
       setError(err.message)
       setResult(null)
@@ -84,29 +85,25 @@ export default function Classify({ health }) {
 
   function switchModel(id) {
     setModel(id)
-    // Re-run straight away so the two models are easy to compare.
+    // Re-run straight away so the models are easy to compare.
     if (result && words >= MIN_WORDS) run(text, id)
   }
 
   return (
-    <div className="space-y-10">
-      <section className="max-w-2xl">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Which section does this story belong in?
-        </h1>
-        <p className="mt-3 text-stone-600 text-pretty">
-          Paste any news article and a fine-tuned DistilBERT neural network will sort it into business,
-          entertainment, politics, sport or tech, and tell you how sure it is.
-        </p>
-      </section>
+    <div className="space-y-12">
+      <Hero />
 
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-start">
         {/* Input */}
-        <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-2 flex items-center justify-between">
-            <label htmlFor="article" className="text-sm font-semibold">Article text</label>
-            <span className={`text-xs tabular-nums ${tooShort ? 'text-amber-700' : 'text-stone-500'}`}>
-              {words} {words === 1 ? 'word' : 'words'}{tooShort && ` · need at least ${MIN_WORDS}`}
+        <section className="card p-4 sm:p-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <label htmlFor="article" className="font-display text-lg font-extrabold">📝 Your article</label>
+            <span
+              className={`rounded-full border-2 px-2.5 py-0.5 text-xs font-bold tabular-nums ${
+                tooShort ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-ink/15 text-ink/60'
+              }`}
+            >
+              {words} {words === 1 ? 'word' : 'words'}{tooShort && ` · need ${MIN_WORDS}+`}
             </span>
           </div>
           <textarea
@@ -116,12 +113,12 @@ export default function Classify({ health }) {
             onKeyDown={(event) => {
               if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) run()
             }}
-            placeholder="Paste the headline and body of a news article here…"
-            className="h-72 w-full resize-y rounded-xl border border-stone-200 bg-stone-50/60 p-4 text-[15px] leading-relaxed placeholder:text-stone-400 focus:border-stone-400 focus:bg-white focus:outline-none sm:h-80"
+            placeholder="Paste a headline and the story here… or hit one of the samples below 👇"
+            className="h-64 w-full resize-y rounded-xl border-2 border-ink bg-paper/60 p-4 text-[15px] leading-relaxed placeholder:text-ink/40 focus:bg-white focus:outline-none sm:h-72"
           />
 
-          <div className="mt-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">Try a sample</p>
+          <div className="mt-5">
+            <p className="label mb-2.5">Try a sample</p>
             <div className="flex flex-wrap gap-2">
               {SAMPLES.map((sample) => {
                 const meta = category(sample.label)
@@ -132,7 +129,7 @@ export default function Classify({ health }) {
                     onClick={() => pickSample(sample)}
                     disabled={loading}
                     title={sample.title}
-                    className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 transition hover:border-stone-400 hover:text-stone-900 disabled:opacity-50"
+                    className={`chip ${meta.tint} transition hover:-translate-y-0.5 hover:-rotate-2 hover:shadow-[2px_2px_0_0_var(--color-ink)] disabled:opacity-50`}
                   >
                     <span aria-hidden="true">{meta.emoji}</span> {meta.name}
                   </button>
@@ -141,62 +138,63 @@ export default function Classify({ health }) {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-4 border-t border-stone-100 pt-5 sm:flex-row sm:items-end sm:justify-between">
-            <fieldset>
-              <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">Model</legend>
-              <div className="inline-flex rounded-lg bg-stone-100 p-1">
-                {MODELS.map((option) => {
-                  const ready = available[option.id] !== false
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => switchModel(option.id)}
-                      disabled={!ready || loading}
-                      aria-pressed={model === option.id}
-                      title={ready ? option.detail : 'Not trained yet'}
-                      className={`rounded-md px-3 py-1.5 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                        model === option.id ? 'bg-white font-semibold shadow-sm' : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      {option.name}
-                      <span className="block text-[11px] font-normal text-stone-500">{option.detail}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </fieldset>
-            <div className="flex gap-2">
-              {text && (
-                <button
-                  type="button"
-                  onClick={() => { setText(''); setResult(null); setError('') }}
-                  className="rounded-xl px-4 py-3 text-sm font-medium text-stone-600 hover:bg-stone-100"
-                >
-                  Clear
-                </button>
-              )}
+          <fieldset className="mt-6">
+            <legend className="label mb-2.5">Pick a brain</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {MODELS.map((option) => {
+                const ready = available[option.id] !== false
+                const active = model === option.id
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => switchModel(option.id)}
+                    disabled={!ready || loading}
+                    aria-pressed={active}
+                    title={ready ? option.detail : 'Not trained yet'}
+                    className={`rounded-xl border-2 border-ink px-2 py-2 text-center transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      active ? 'bg-ink text-white shadow-[3px_3px_0_0_var(--color-sun)]' : 'bg-white hover:bg-paper'
+                    }`}
+                  >
+                    <span className="block text-xl" aria-hidden="true">{option.emoji}</span>
+                    <span className="block text-sm font-bold">{option.name}</span>
+                    <span className={`block text-[11px] ${active ? 'text-white/70' : 'text-ink/50'}`}>{option.detail}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </fieldset>
+
+          <div className="mt-6 flex gap-3">
+            {text && (
               <button
                 type="button"
-                onClick={() => run()}
-                disabled={words < MIN_WORDS || loading}
-                className="flex-1 rounded-xl bg-stone-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300 sm:flex-none"
+                onClick={() => { setText(''); setResult(null); setError('') }}
+                className="btn bg-white"
               >
-                {loading ? 'Classifying…' : 'Classify article'}
+                Clear
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => run()}
+              disabled={words < MIN_WORDS || loading}
+              className="btn flex-1 bg-sun py-3.5 font-display text-lg font-extrabold"
+            >
+              {loading ? 'Thinking…' : '✨ Classify it!'}
+            </button>
           </div>
-          <p className="mt-3 hidden text-right text-xs text-stone-400 sm:block">Tip: press ⌘/Ctrl + Enter to classify</p>
+          <p className="mt-3 hidden text-right text-xs text-ink/40 sm:block">Tip: ⌘/Ctrl + Enter also works</p>
         </section>
 
         {/* Result */}
-        <section ref={resultRef} aria-live="polite" className="scroll-mt-24 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
+        <section ref={resultRef} aria-live="polite" className="scroll-mt-28">
           {error ? (
             <ErrorState message={error} onRetry={words >= MIN_WORDS ? () => run() : null} />
           ) : loading ? (
-            <LoadingState />
+            <LoadingState model={model} />
           ) : result ? (
-            <Result result={result} />
+            <Result key={result.category + result.confidence + result.model} result={result} />
           ) : (
             <EmptyState />
           )}
@@ -216,145 +214,267 @@ export default function Classify({ health }) {
   )
 }
 
+function Hero() {
+  const stickers = [
+    { emoji: '⚽', className: 'right-[40%] top-40', r: '-12deg' },
+    { emoji: '🏛️', className: 'right-[30%] -top-4', r: '8deg' },
+    { emoji: '💼', className: 'right-[14%] top-14', r: '-6deg' },
+    { emoji: '💻', className: 'right-[2%] -top-2', r: '14deg' },
+    { emoji: '🎬', className: 'right-[22%] top-32', r: '-10deg' },
+  ]
+  return (
+    <section className="relative">
+      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        {stickers.map((s, i) => (
+          <span
+            key={s.emoji}
+            className={`animate-float absolute grid size-14 place-items-center rounded-2xl border-2 border-ink bg-white text-3xl shadow-[3px_3px_0_0_var(--color-ink)] ${s.className}`}
+            style={{ '--r': s.r, animationDelay: `${i * 0.6}s` }}
+          >
+            {s.emoji}
+          </span>
+        ))}
+      </div>
+      <div className="relative max-w-2xl">
+        <p className="label mb-3">🤖 Powered by a neural network</p>
+        <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance sm:text-6xl">
+          Paste the news. <br className="hidden sm:block" />
+          Our{' '}
+          <span className="relative inline-block">
+            <span className="absolute inset-x-[-4px] bottom-1 h-[40%] -rotate-1 bg-sun" aria-hidden="true" />
+            <span className="relative">AI</span>
+          </span>{' '}
+          sorts it.
+        </h1>
+        <p className="mt-4 max-w-xl text-lg text-ink/70 text-pretty">
+          A fine-tuned DistilBERT model reads any article and decides if it’s{' '}
+          <b>business</b>, <b>entertainment</b>, <b>politics</b>, <b>sport</b> or <b>tech</b>, and shows how sure it is.
+        </p>
+      </div>
+    </section>
+  )
+}
+
+function Confetti({ color }) {
+  const colors = [color, '#fde047', '#1c1917', '#ffffff']
+  const pieces = Array.from({ length: 22 }, (_, i) => {
+    const angle = (i / 22) * Math.PI * 2
+    const distance = 90 + ((i * 37) % 70)
+    return {
+      '--x': `${Math.cos(angle) * distance}px`,
+      '--y': `${Math.sin(angle) * distance - 30}px`,
+      '--spin': `${(i % 2 ? 1 : -1) * (180 + i * 20)}deg`,
+      background: colors[i % colors.length],
+      animationDelay: `${(i % 5) * 20}ms`,
+    }
+  })
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-16 z-10" aria-hidden="true">
+      {pieces.map((style, i) => (
+        <span key={i} className="confetti-piece absolute size-2.5 rounded-[2px] border border-ink" style={style} />
+      ))}
+    </div>
+  )
+}
+
 function Result({ result }) {
   const meta = category(result.category)
   const ranked = Object.entries(result.probabilities).sort((a, b) => b[1] - a[1])
   const unsure = result.confidence < 0.6
 
   return (
-    <div className="animate-rise">
-      <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Predicted category</p>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-lg font-semibold ring-1 ${meta.soft}`}>
-          <span aria-hidden="true">{meta.emoji}</span> {meta.name}
+    <div className="card relative overflow-visible">
+      {result.confidence >= 0.8 && <Confetti color={meta.hex} />}
+
+      {/* Coloured headline panel */}
+      <div className={`relative overflow-hidden rounded-t-[14px] border-b-2 border-ink px-5 pb-6 pt-5 ${meta.bg}`}>
+        <span className="pointer-events-none absolute -right-4 -top-6 text-[120px] leading-none opacity-25" aria-hidden="true">
+          {meta.emoji}
         </span>
-        <div className="text-right">
-          <div className="font-serif text-4xl font-semibold tabular-nums">{percent(result.confidence)}</div>
-          <div className="text-xs text-stone-500">confidence</div>
+        <p className="label text-ink/70">The AI says…</p>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+          <span className="animate-stamp inline-flex items-center gap-2 rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-display text-3xl font-extrabold uppercase tracking-wide shadow-[4px_4px_0_0_var(--color-ink)]">
+            <span aria-hidden="true">{meta.emoji}</span> {meta.name}
+          </span>
+          <div className="text-right">
+            <div className="font-display text-5xl leading-none font-extrabold tabular-nums">{Math.floor(result.confidence * 100)}%</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-ink/70">sure</div>
+          </div>
         </div>
       </div>
 
-      {result.related.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-stone-500">Also related:</span>
-          {result.related.map((label) => (
-            <span key={label} className={`rounded-full px-2.5 py-0.5 font-medium ring-1 ${category(label).soft}`}>
-              {category(label).emoji} {category(label).name} {percent(result.probabilities[label])}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {unsure && (
-        <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
-          The model is not very sure. The article may cover more than one topic.
-        </p>
-      )}
-
-      <div className="mt-6 space-y-3">
-        {ranked.map(([label, score]) => {
-          const item = category(label)
-          return (
-            <div key={label}>
-              <div className="mb-1 flex justify-between text-sm">
-                <span className={label === result.category ? 'font-semibold' : 'text-stone-600'}>{item.name}</span>
-                <span className="tabular-nums text-stone-600">{percent(score)}</span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-stone-100" role="progressbar" aria-label={item.name} aria-valuenow={Math.round(score * 100)} aria-valuemin={0} aria-valuemax={100}>
-                <div
-                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${label === result.category ? item.bar : 'bg-stone-300'}`}
-                  style={{ width: `${Math.max(score * 100, 0.5)}%` }}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {result.key_terms.length > 0 && (
-        <div className="mt-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Words linked to {meta.name.toLowerCase()}</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {result.key_terms.map((term) => (
-              <span key={term} className="rounded-md bg-stone-100 px-2 py-1 text-sm text-stone-700">{term}</span>
+      <div className="p-5">
+        {result.related.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold text-ink/60">Also related:</span>
+            {result.related.map((label) => (
+              <span key={label} className={`chip py-0.5 text-xs ${category(label).tint}`}>
+                {category(label).emoji} {category(label).name} {percent(result.probabilities[label], 0)}
+              </span>
             ))}
           </div>
-          <p className="mt-1.5 text-[11px] text-stone-400">Words in your text that the TF-IDF model weighs most towards this category.</p>
-        </div>
-      )}
+        )}
 
-      <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-stone-100 pt-4 text-sm">
-        <div>
-          <dt className="text-xs text-stone-500">Model</dt>
-          <dd className="font-medium">{MODEL_SHORT[result.model]}</dd>
+        {unsure && (
+          <p className="mb-4 rounded-xl border-2 border-amber-500 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900">
+            🤔 Not very sure. This article might cover more than one topic.
+          </p>
+        )}
+
+        <div className="space-y-2.5">
+          {ranked.map(([label, score], i) => {
+            const item = category(label)
+            const top = label === result.category
+            return (
+              <div key={label} className="flex items-center gap-3">
+                <span className="w-7 text-center text-lg" aria-hidden="true">{item.emoji}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span className={top ? 'font-bold' : 'text-ink/70'}>{item.name}</span>
+                    <span className="font-semibold tabular-nums">{percent(score)}</span>
+                  </div>
+                  <div
+                    className="h-3.5 overflow-hidden rounded-full border-2 border-ink bg-paper"
+                    role="progressbar"
+                    aria-label={item.name}
+                    aria-valuenow={Math.round(score * 100)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div
+                      className={`animate-grow h-full ${top ? item.bg : 'bg-ink/25'}`}
+                      style={{ width: `${Math.max(score * 100, 1)}%`, animationDelay: `${0.15 + i * 0.08}s` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-        <div>
-          <dt className="text-xs text-stone-500">Words</dt>
-          <dd className="font-medium tabular-nums">{result.word_count.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-stone-500">Time</dt>
-          <dd className="font-medium tabular-nums">{Math.round(result.elapsed_ms)} ms</dd>
-        </div>
-      </dl>
-      {result.truncated && (
-        <p className="mt-3 text-xs text-stone-500">
-          Long article: DistilBERT read the first {result.max_tokens} tokens (about {Math.round(result.max_tokens * 0.75)} words), which include the headline and key facts.
-        </p>
-      )}
+
+        {result.key_terms.length > 0 && (
+          <div className="mt-6">
+            <p className="label">🔑 Clue words</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {result.key_terms.map((term, i) => (
+                <span
+                  key={term}
+                  className={`rounded-md px-2 py-0.5 text-sm font-semibold ${meta.tint}`}
+                  style={{ transform: `rotate(${i % 2 ? 1.5 : -1.5}deg)` }}
+                >
+                  {term}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-ink/50">Words in your text that push hardest towards {meta.name.toLowerCase()} (from the TF-IDF model).</p>
+          </div>
+        )}
+
+        <dl className="mt-6 grid grid-cols-3 gap-2 text-center text-sm">
+          {[
+            ['Brain', MODEL_SHORT[result.model]],
+            ['Words', result.word_count.toLocaleString()],
+            ['Speed', `${Math.round(result.elapsed_ms)} ms`],
+          ].map(([term, value]) => (
+            <div key={term} className="rounded-xl border-2 border-ink/15 bg-paper/60 py-2">
+              <dt className="text-[11px] font-bold uppercase tracking-widest text-ink/50">{term}</dt>
+              <dd className="font-bold tabular-nums">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        {result.truncated && (
+          <p className="mt-3 text-xs text-ink/60">
+            Long article: DistilBERT read the first {result.max_tokens} tokens (about {Math.round(result.max_tokens * 0.75)} words), which include the headline and key facts.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const THINKING_STEPS = {
+  combined: [
+    ['✂️', 'Chopping the text into tokens'],
+    ['🧠', 'DistilBERT reading with self-attention'],
+    ['🔢', 'TF-IDF counting the clue words'],
+    ['🤝', 'Averaging both opinions'],
+  ],
+  distilbert: [
+    ['✂️', 'Chopping the text into tokens'],
+    ['🧠', 'Running 6 Transformer layers'],
+    ['📊', 'Softmax → probabilities'],
+  ],
+  baseline: [
+    ['🔢', 'Scoring every word with TF-IDF'],
+    ['⚖️', 'Weighing words per category'],
+    ['📊', 'Turning scores into probabilities'],
+  ],
+}
+
+function LoadingState({ model }) {
+  const steps = THINKING_STEPS[model] ?? THINKING_STEPS.combined
+  const [step, setStep] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), 260)
+    return () => clearInterval(timer)
+  }, [steps.length])
+
+  return (
+    <div className="card flex min-h-[420px] flex-col items-center justify-center p-6 text-center" aria-label="Classifying">
+      <div className="relative mb-6 grid size-24 place-items-center rounded-2xl border-2 border-ink bg-paper text-5xl" aria-hidden="true">
+        📰
+        <span className="animate-scan absolute inset-x-1 h-1 rounded-full bg-red-500 shadow-[0_0_12px_2px_rgb(239_68_68/0.6)]" />
+      </div>
+      <p className="font-display text-xl font-extrabold">The AI is reading…</p>
+      <ol className="mt-5 w-full max-w-xs space-y-2 text-left text-sm">
+        {steps.map(([emoji, label], i) => (
+          <li
+            key={label}
+            className={`flex items-center gap-2.5 rounded-lg border-2 px-3 py-1.5 transition ${
+              i < step ? 'border-ink/15 text-ink/50' : i === step ? 'border-ink bg-sun font-bold' : 'border-transparent text-ink/30'
+            }`}
+          >
+            <span aria-hidden="true">{i < step ? '✅' : emoji}</span> {label}
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }
 
 function EmptyState() {
   return (
-    <div className="grid min-h-72 place-items-center text-center">
-      <div>
-        <div className="mx-auto flex w-fit items-end gap-1.5" aria-hidden="true">
-          {['bg-sky-500', 'bg-fuchsia-500', 'bg-rose-500', 'bg-emerald-500', 'bg-violet-500'].map((color, i) => (
-            <span key={color} className={`w-3 rounded-full ${color} opacity-80`} style={{ height: `${24 + ((i * 17) % 40)}px` }} />
-          ))}
-        </div>
-        <p className="mt-5 font-medium">No article classified yet</p>
-        <p className="mt-1 text-sm text-stone-500">Paste an article or try a sample to see the prediction here.</p>
-      </div>
-    </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="min-h-72 animate-pulse" aria-label="Classifying">
-      <div className="h-3 w-32 rounded bg-stone-200" />
-      <div className="mt-4 flex justify-between">
-        <div className="h-10 w-40 rounded-full bg-stone-200" />
-        <div className="h-10 w-24 rounded bg-stone-200" />
-      </div>
-      <div className="mt-8 space-y-4">
-        {[90, 60, 40, 25, 15].map((width) => (
-          <div key={width}>
-            <div className="mb-1.5 h-3 w-20 rounded bg-stone-200" />
-            <div className="h-2.5 rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-200" style={{ width: `${width}%` }} /></div>
+    <div className="card flex min-h-[420px] flex-col items-center justify-center border-dashed p-6 text-center shadow-none">
+      <div className="relative h-28 w-40" aria-hidden="true">
+        {['bg-sky-300 -rotate-12 left-0', 'bg-pink-300 rotate-6 left-10', 'bg-lime-300 -rotate-3 left-5'].map((cls) => (
+          <div key={cls} className={`absolute top-2 h-24 w-28 rounded-lg border-2 border-ink p-2 ${cls}`}>
+            <div className="h-2 w-16 rounded bg-ink/60" />
+            <div className="mt-2 h-1.5 w-20 rounded bg-ink/25" />
+            <div className="mt-1 h-1.5 w-14 rounded bg-ink/25" />
+            <div className="mt-1 h-1.5 w-18 rounded bg-ink/25" />
           </div>
         ))}
+        <span className="absolute -right-2 -top-1 grid size-10 rotate-12 place-items-center rounded-full border-2 border-ink bg-sun font-display text-xl font-extrabold">
+          ?
+        </span>
       </div>
+      <p className="mt-6 font-display text-xl font-extrabold">Waiting for a story</p>
+      <p className="mt-1 max-w-xs text-sm text-ink/60">Paste an article or tap a sample, and the AI’s verdict lands here.</p>
     </div>
   )
 }
 
 function ErrorState({ message, onRetry }) {
   return (
-    <div className="grid min-h-72 place-items-center text-center">
-      <div className="max-w-sm">
-        <div className="mx-auto grid size-10 place-items-center rounded-full bg-rose-50 text-lg text-rose-600 ring-1 ring-rose-200" aria-hidden="true">!</div>
-        <p className="mt-4 font-medium">Something went wrong</p>
-        <p className="mt-1 break-words text-sm text-stone-600">{message}</p>
-        {onRetry && (
-          <button type="button" onClick={onRetry} className="mt-4 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-100">
-            Try again
-          </button>
-        )}
-      </div>
+    <div className="card flex min-h-[420px] flex-col items-center justify-center bg-red-50 p-6 text-center">
+      <span className="text-6xl" aria-hidden="true">😵</span>
+      <p className="mt-4 font-display text-xl font-extrabold">Oops, something broke</p>
+      <p className="mt-1 max-w-sm break-words text-sm text-ink/70">{message}</p>
+      {onRetry && (
+        <button type="button" onClick={onRetry} className="btn mt-5 bg-white">
+          Try again
+        </button>
+      )}
     </div>
   )
 }
@@ -363,20 +483,29 @@ function History({ items, onOpen, onClear }) {
   if (items.length === 0) return null
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-serif text-xl font-semibold">Recent predictions</h2>
-        <button type="button" onClick={onClear} className="text-sm text-stone-500 hover:text-stone-900">Clear history</button>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-2xl font-extrabold">🗂️ Recent predictions</h2>
+        <button type="button" onClick={onClear} className="text-sm font-semibold text-ink/50 underline-offset-2 hover:text-ink hover:underline">
+          Clear
+        </button>
       </div>
-      <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-        {items.map((item) => {
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((item, i) => {
           const meta = category(item.category)
           return (
             <li key={item.id}>
-              <button type="button" onClick={() => onOpen(item)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-stone-50 sm:gap-4">
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${meta.soft}`}>{meta.name}</span>
-                <span className="min-w-0 flex-1 truncate text-sm text-stone-700">{item.snippet}</span>
-                <span className="hidden shrink-0 text-xs text-stone-400 sm:inline">{MODEL_SHORT[item.model]}</span>
-                <span className="shrink-0 text-sm font-medium tabular-nums">{percent(item.confidence, 0)}</span>
+              <button
+                type="button"
+                onClick={() => onOpen(item)}
+                className="card block h-full w-full overflow-hidden text-left transition hover:-translate-y-1 hover:rotate-0"
+                style={{ transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)` }}
+              >
+                <div className={`flex items-center justify-between border-b-2 border-ink px-3 py-1.5 ${meta.bg}`}>
+                  <span className="text-sm font-extrabold uppercase tracking-wide">{meta.emoji} {meta.name}</span>
+                  <span className="font-display font-extrabold tabular-nums">{Math.floor(item.confidence * 100)}%</span>
+                </div>
+                <p className="line-clamp-2 px-3 pt-2 text-sm text-ink/80">{item.snippet}…</p>
+                <p className="px-3 pb-2.5 pt-1 text-[11px] font-bold uppercase tracking-widest text-ink/40">{MODEL_SHORT[item.model]}</p>
               </button>
             </li>
           )

@@ -1,14 +1,15 @@
 // Display settings for each category. The category names themselves come
 // from the backend (/health), which reads them from the trained model.
+// All class names are written out in full so Tailwind can find them.
 export const CATEGORIES = {
-  business: { name: 'Business', short: 'Business', emoji: '💼', bar: 'bg-sky-600', soft: 'bg-sky-50 text-sky-800 ring-sky-200', hex: '#0284c7' },
-  entertainment: { name: 'Entertainment', short: 'Entmt.', emoji: '🎬', bar: 'bg-fuchsia-600', soft: 'bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-200', hex: '#c026d3' },
-  politics: { name: 'Politics', short: 'Politics', emoji: '🏛️', bar: 'bg-rose-600', soft: 'bg-rose-50 text-rose-800 ring-rose-200', hex: '#e11d48' },
-  sport: { name: 'Sport', short: 'Sport', emoji: '⚽', bar: 'bg-emerald-600', soft: 'bg-emerald-50 text-emerald-800 ring-emerald-200', hex: '#059669' },
-  tech: { name: 'Tech', short: 'Tech', emoji: '💻', bar: 'bg-violet-600', soft: 'bg-violet-50 text-violet-800 ring-violet-200', hex: '#7c3aed' },
+  business: { name: 'Business', short: 'Business', emoji: '💼', bg: 'bg-sky-400', tint: 'bg-sky-100', hex: '#38bdf8' },
+  entertainment: { name: 'Entertainment', short: 'Entmt.', emoji: '🎬', bg: 'bg-pink-400', tint: 'bg-pink-100', hex: '#f472b6' },
+  politics: { name: 'Politics', short: 'Politics', emoji: '🏛️', bg: 'bg-red-400', tint: 'bg-red-100', hex: '#f87171' },
+  sport: { name: 'Sport', short: 'Sport', emoji: '⚽', bg: 'bg-lime-400', tint: 'bg-lime-100', hex: '#a3e635' },
+  tech: { name: 'Tech', short: 'Tech', emoji: '💻', bg: 'bg-violet-400', tint: 'bg-violet-100', hex: '#a78bfa' },
 }
 
-const FALLBACK = { emoji: '📰', bar: 'bg-stone-600', soft: 'bg-stone-100 text-stone-800 ring-stone-200', hex: '#57534e' }
+const FALLBACK = { emoji: '📰', bg: 'bg-stone-300', tint: 'bg-stone-100', hex: '#d6d3d1' }
 
 export function category(label) {
   const name = label.charAt(0).toUpperCase() + label.slice(1)
@@ -16,9 +17,9 @@ export function category(label) {
 }
 
 export const MODELS = [
-  { id: 'combined', name: 'Combined', detail: 'Recommended' },
-  { id: 'distilbert', name: 'DistilBERT', detail: 'Neural network' },
-  { id: 'baseline', name: 'TF-IDF + LogReg', detail: 'Classical baseline' },
+  { id: 'combined', name: 'Combined', detail: 'Recommended', emoji: '🤝' },
+  { id: 'distilbert', name: 'DistilBERT', detail: 'Neural network', emoji: '🧠' },
+  { id: 'baseline', name: 'TF-IDF', detail: 'Word counting', emoji: '🔢' },
 ]
 
 export const MODEL_SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF' }

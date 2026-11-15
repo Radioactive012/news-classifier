@@ -1,6 +1,6 @@
 # 3-minute demo script
 
-**Before the demo:** run `./start.sh`, open http://localhost:8000, and check the top-right corner says **Models ready** (green). Clear the "Recent predictions" list.
+**Before the demo:** run `./start.sh`, open http://localhost:8000, and check the top-right corner says **AI ready** (green). Clear the "Recent predictions" list.
 
 ## 1. The problem (20 s)
 
@@ -10,15 +10,15 @@
 
 1. Click **Sport**. Point out the green badge, the confidence and the bars for every category.
 2. Click **Politics**, then **Business**, **Tech** and **Entertainment**. Each one lands in the right category.
-3. Point to **Words linked to…**: "these are the words in the article that pushed the decision."
+3. Point to **Clue words**: "these are the words in the article that pushed the decision."
 
 ## 3. A real article from today (40 s)
 
-1. Open any story on bbc.co.uk/news (or another news site), copy the headline and text, paste it in, click **Classify article**.
-2. Switch the model toggle between **Combined**, **DistilBERT** and **TF-IDF + LogReg**: the result re-runs instantly so the models can be compared.
+1. Open any story on bbc.co.uk/news (or another news site), copy the headline and text, paste it in, click **✨ Classify it!**. While it runs, point at the loading steps: they show what the AI does (tokens → DistilBERT → TF-IDF → average).
+2. Switch **Pick a brain** between **Combined**, **DistilBERT** and **TF-IDF**: the result re-runs instantly so the models can be compared.
 3. Paste a story that mixes topics, e.g. a government investment programme. Combined shows **Business 67%** with **Also related: Politics 31%**. Explain that version 1 of DistilBERT said business 99.5% because it only ever saw single-topic articles, and that averaging it with TF-IDF and adding modern training data fixed that.
 
-## 4. How good is it? (40 s) — *Model performance page*
+## 4. How good is it? (40 s) — *Performance page*
 
 1. Read the three accuracy cards: all models were tested on 1,211 articles never seen in training. Point at the two dataset scores: everything gets ~99% on old BBC news, but on modern HuffPost headlines the neural network beats TF-IDF by 6 points.
 2. Tell the version 1 story: trained only on 2004 BBC news, the model scored just 68% on modern news; adding 10,000 HuffPost items raised that to 88%.
