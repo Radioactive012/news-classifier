@@ -48,10 +48,19 @@ export default function About() {
       <section className="grid gap-4 md:grid-cols-2">
         <Card title="The dataset">
           <p>
-            The <strong>BBC News</strong> dataset (Greene &amp; Cunningham, 2006): 2,225 articles from the BBC News
-            website, 2004–2005, in five categories. After removing duplicates, 2,104 articles remain, split 80% for
-            training, 10% for validation (choosing the best epoch) and 10% for the final test.
+            Two datasets, 12,104 articles in total, in five categories:
           </p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-5">
+            <li>
+              <strong>BBC News</strong> (Greene &amp; Cunningham, 2006): 2,104 full articles from 2004–05, after removing
+              duplicates.
+            </li>
+            <li>
+              <strong>HuffPost News Category</strong> (Misra, 2022): 10,000 headlines with a short summary from 2012–22,
+              2,000 per category, so the model also knows modern topics.
+            </li>
+          </ul>
+          <p className="mt-2">Each is split 80% for training, 10% for validation (choosing the best epoch) and 10% for the final test.</p>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {Object.entries(CATEGORIES).map(([key, item]) => (
               <span key={key} className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${item.soft}`}>{item.emoji} {item.name}</span>
@@ -71,7 +80,7 @@ export default function About() {
         </Card>
         <Card title="Limitations">
           <ul className="list-disc space-y-1.5 pl-5">
-            <li>The training news is from 2004–05 and British, so very recent topics (new apps, new politicians) may be misread.</li>
+            <li>The newest training news is from 2022, so events and names since then may be misread.</li>
             <li>Each article gets exactly one label, even when it covers two topics, such as a footballer’s tax case.</li>
             <li>Only five categories exist: a science or health story will be forced into the closest one.</li>
             <li>DistilBERT reads only the first 512 tokens (about 380 words) of very long articles.</li>

@@ -13,7 +13,7 @@ import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from common import DATA_DIR, MODEL_DIR, load_labels, save_results
-from train_bert import BATCH_SIZE, MAX_LENGTH, OUTPUT_DIR, pick_device
+from train_bert import BATCH_SIZE, MAX_LENGTH, OUTPUT_DIR, pick_device  # noqa: F401
 
 
 @torch.no_grad()
@@ -50,7 +50,7 @@ def main() -> None:
     training = json.loads((OUTPUT_DIR / "training_history.json").read_text(encoding="utf-8"))
     print("\n== DistilBERT ==")
     save_results("distilbert", "DistilBERT (fine-tuned)", test["label"],
-                 [labels[i] for i in bert.argmax(axis=1)], labels, {"training": training})
+                 [labels[i] for i in bert.argmax(axis=1)], labels, test["source"].tolist(), {"training": training})
 
     # Combined model: the average of DistilBERT's and the baseline's
     # probabilities. This is what the web app uses by default.
@@ -58,7 +58,7 @@ def main() -> None:
     combined = (bert + baseline.predict_proba(test["text"])) / 2
     print("\n== Combined (DistilBERT + TF-IDF) ==")
     save_results("combined", "DistilBERT + TF-IDF (combined)", test["label"],
-                 [labels[i] for i in combined.argmax(axis=1)], labels)
+                 [labels[i] for i in combined.argmax(axis=1)], labels, test["source"].tolist())
 
 
 if __name__ == "__main__":

@@ -9,3 +9,4 @@ __pycache__/
 frontend/dist/
 .claude/
 reports/*.log
+/models_v1/

@@ -10,15 +10,16 @@ Paste a news article into the web app and a fine-tuned **DistilBERT** neural net
 
 ## Results
 
-Both models are evaluated on the same 211 held-out test articles that were never used for training. See [reports/REPORT.md](reports/REPORT.md) for the full write-up.
+Trained and tested on two datasets: **BBC News** (full articles, 2004–05) and **HuffPost** (headlines and summaries, 2012–22). The 1,211 test articles were never used for training. See [reports/REPORT.md](reports/REPORT.md) for the full write-up.
 
-| Model | Test accuracy | Macro F1 | Correct |
+| Model | Overall | BBC 2004–05 | HuffPost 2012–22 |
 |---|---|---|---|
-| **Combined** (used by the app) | 98.6% | 98.7% | 208 / 211 |
-| DistilBERT (fine-tuned neural network) | 98.6% | 98.7% | 208 / 211 |
-| TF-IDF + Logistic Regression (baseline) | 99.1% | 99.0% | 209 / 211 |
+| **Combined** (used by the app) | **89.8%** | **99.1%** | **87.9%** |
+| DistilBERT (fine-tuned neural network) | 89.6% | 98.6% | 87.7% |
+| TF-IDF + Logistic Regression (baseline) | 84.6% | 98.1% | 81.7% |
+| *Version 1 DistilBERT, trained on BBC only* | — | *98.6%* | *68.1%* |
 
-Both models are near-perfect on this dataset; the difference is one article, which is within noise. On 20 live BBC articles from November 2026, DistilBERT got 15 right and the baseline 14 (see [reports/manual_test.md](reports/manual_test.md)); several "misses" are stories the BBC filed under two sections at once.
+Adding modern news to the training data raised accuracy on modern news from 68% to 88% without losing anything on BBC. On 20 live BBC articles from November 2026, the combined model got 17 right (see [reports/manual_test.md](reports/manual_test.md)); the misses are stories the BBC itself filed under two sections.
 
 ## How it works
 
@@ -26,10 +27,10 @@ Both models are near-perfect on this dataset; the difference is one article, whi
 News article ──► Tokenizer ──► DistilBERT (6-layer Transformer, 66M parameters) ──► Softmax ──► Category + confidence
 ```
 
-1. **Data** (`training/prepare_data.py`): downloads the BBC News dataset (2,225 articles, 2004–05), removes duplicates and near-duplicates, and makes a stratified 80/10/10 train/validation/test split with a fixed seed.
+1. **Data** (`training/prepare_data.py`): downloads the BBC News dataset (2,225 full articles, 2004–05) and the HuffPost News Category dataset (2,000 headlines + summaries per category, 2012–22), removes duplicates, and makes a stratified 80/10/10 train/validation/test split of each with a fixed seed.
 2. **Baseline** (`training/train_baseline.py`): TF-IDF word and word-pair features + Logistic Regression.
 3. **Neural model** (`training/train_bert.py`): fine-tunes `distilbert-base-uncased` with PyTorch, keeping the epoch with the best validation accuracy.
-4. **Evaluation** (`training/evaluate.py`): scores DistilBERT on the test split; both models write to `reports/metrics.json` and save a confusion matrix image.
+4. **Evaluation** (`training/evaluate.py`): scores DistilBERT and the combined model on the test split; every model writes to `reports/metrics.json` (overall and per dataset) and saves a confusion matrix image.
 5. **API** (`backend/`): FastAPI loads both models once and serves predictions.
 6. **Web app** (`frontend/`): React + Vite + Tailwind CSS, with Classify, Model performance and About pages.
 
@@ -67,7 +68,7 @@ Run from the project root with the virtual environment active:
 ```sh
 python training/prepare_data.py     # download + split the data (seconds)
 python training/train_baseline.py   # TF-IDF + Logistic Regression (seconds)
-python training/train_bert.py       # fine-tune DistilBERT (about 15 min on an Apple M-series Mac, a few minutes on a GPU)
+python training/train_bert.py       # fine-tune DistilBERT (about 25 min on an Apple M-series Mac, a few minutes on a GPU)
 python training/evaluate.py         # test DistilBERT and save its metrics
 ```
 
@@ -117,10 +118,10 @@ python scripts/fetch_live_articles.py # classify today's BBC articles -> reports
 
 ## Limitations
 
-- The training articles are British news from 2004–05, so very recent topics can be misread.
+- The newest training news is from 2022, so events and names since then can be misread.
 - Each article gets exactly one of five labels, even when it covers two topics or none of them.
 - DistilBERT reads at most 512 tokens (roughly 380 words) of each article.
 
 ## Credits
 
-Dataset: D. Greene and P. Cunningham, "Practical Solutions to the Problem of Diagonal Dominance in Kernel Document Clustering", ICML 2006. Model: [DistilBERT](https://huggingface.co/distilbert-base-uncased) by Hugging Face.
+Dataset: D. Greene and P. Cunningham, "Practical Solutions to the Problem of Diagonal Dominance in Kernel Document Clustering", ICML 2006. Model: [DistilBERT](https://huggingface.co/distilbert-base-uncased) by Hugging Face. HuffPost data: R. Misra, "News Category Dataset", 2022 (CC BY 4.0).

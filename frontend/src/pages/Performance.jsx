@@ -5,6 +5,7 @@ import { category, percent } from '../categories.js'
 
 const ORDER = ['combined', 'distilbert', 'baseline']
 const SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF + LogReg' }
+const SOURCES = { bbc: 'BBC News 2004–05', huffpost: 'HuffPost 2012–22' }
 const KIND = { combined: 'Used by the app', distilbert: 'Neural network', baseline: 'Classical baseline' }
 
 export default function Performance() {
@@ -44,7 +45,8 @@ export default function Performance() {
       <section className="max-w-2xl">
         <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">Model performance</h1>
         <p className="mt-3 text-stone-600 text-pretty">
-          All models were tested on {metrics[models[0]].test_size} BBC articles they never saw during training.
+          All models were tested on {metrics[models[0]].test_size.toLocaleString()} articles they never saw during training: BBC News
+          stories from 2004–05 and HuffPost headlines from 2012–22.
           The DistilBERT neural network is compared with a classical TF-IDF + Logistic Regression baseline, and with the
           two combined (their probabilities averaged), which is what the app uses by default.
         </p>
@@ -133,9 +135,19 @@ function SummaryCard({ id, data }) {
         </div>
         <dl className={`grid gap-1 pb-1 text-sm ${neural ? 'text-stone-300' : 'text-stone-600'}`}>
           <div><dt className="inline">Macro F1 </dt><dd className="inline font-semibold tabular-nums">{percent(data.macro_f1)}</dd></div>
-          <div><dt className="inline">Correct </dt><dd className="inline font-semibold tabular-nums">{correct} / {data.test_size}</dd></div>
+          <div><dt className="inline">Correct </dt><dd className="inline font-semibold tabular-nums">{correct.toLocaleString()} / {data.test_size.toLocaleString()}</dd></div>
         </dl>
       </div>
+      {data.by_source && Object.keys(data.by_source).length > 0 && (
+        <dl className={`mt-5 grid grid-cols-2 gap-3 border-t pt-4 text-sm ${neural ? 'border-stone-700 text-stone-300' : 'border-stone-100 text-stone-600'}`}>
+          {Object.entries(data.by_source).map(([source, result]) => (
+            <div key={source}>
+              <dt className="text-xs">{SOURCES[source] ?? source}</dt>
+              <dd className={`font-semibold tabular-nums ${neural ? 'text-white' : 'text-stone-900'}`}>{percent(result.accuracy)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   )
 }

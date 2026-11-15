@@ -26,9 +26,10 @@ def load_labels() -> list[str]:
     return json.loads((DATA_DIR / "labels.json").read_text(encoding="utf-8"))
 
 
-def save_results(name: str, title: str, y_true, y_pred, labels: list[str], extra: dict | None = None) -> float:
+def save_results(name: str, title: str, y_true, y_pred, labels: list[str], sources=None, extra: dict | None = None) -> float:
     """Compute test metrics for one model, merge them into reports/metrics.json
-    under `name`, and save reports/confusion_<name>.png. Returns accuracy."""
+    under `name`, and save reports/confusion_<name>.png. Returns accuracy.
+    `sources` (bbc / huffpost per article) adds an accuracy for each dataset."""
     accuracy = accuracy_score(y_true, y_pred)
     report = classification_report(y_true, y_pred, labels=labels, output_dict=True, zero_division=0)
     matrix = confusion_matrix(y_true, y_pred, labels=labels)
@@ -40,6 +41,16 @@ def save_results(name: str, title: str, y_true, y_pred, labels: list[str], extra
         "accuracy": accuracy,
         "macro_f1": report["macro avg"]["f1-score"],
         "test_size": len(y_true),
+        "by_source": {} if sources is None else {
+            source: {
+                "accuracy": accuracy_score(
+                    [t for t, s in zip(y_true, sources) if s == source],
+                    [p for p, s in zip(y_pred, sources) if s == source],
+                ),
+                "test_size": int(sum(s == source for s in sources)),
+            }
+            for source in sorted(set(sources))
+        },
         "labels": labels,
         "per_class": {
             label: {
@@ -64,6 +75,8 @@ def save_results(name: str, title: str, y_true, y_pred, labels: list[str], extra
     plt.close(display.figure_)
 
     print(f"Test accuracy: {accuracy:.4f} ({accuracy:.2%})")
+    for source, result in metrics[name]["by_source"].items():
+        print(f"  {source}: {result['accuracy']:.2%} of {result['test_size']}")
     print(classification_report(y_true, y_pred, labels=labels, digits=4, zero_division=0))
     print(f"Saved metrics under '{name}' in reports/metrics.json")
     print(f"Saved confusion matrix: reports/confusion_{name}.png")

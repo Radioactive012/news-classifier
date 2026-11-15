@@ -35,7 +35,8 @@ def main() -> None:
     print(f"Test articles: {len(test)}")
     print("Saved model: models/baseline.joblib")
 
-    save_results("baseline", "TF-IDF + Logistic Regression", test["label"], model.predict(test["text"]), labels)
+    save_results("baseline", "TF-IDF + Logistic Regression", test["label"], model.predict(test["text"]), labels,
+                 sources=test["source"].tolist())
 
 
 if __name__ == "__main__":

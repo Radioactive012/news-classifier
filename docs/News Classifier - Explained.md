@@ -64,7 +64,7 @@ There are **three parts**:
 | **Machine learning (ML)** | Instead of writing rules ("if the text says *goal*, it's sport"), you show the computer thousands of examples and it figures out the rules itself. |
 | **Model** | The thing that has learned. A file full of numbers that turns an input (article) into an output (category). |
 | **Training** | The learning process: show examples, check the model's guesses, nudge its numbers to be less wrong, repeat. |
-| **Dataset** | The collection of examples used for learning. Ours is 2,225 BBC articles that already have the correct label. |
+| **Dataset** | The collection of examples used for learning. Ours is 12,104 news articles (BBC + HuffPost) that already have the correct label. |
 | **Label** | The correct answer for an example, e.g. "sport". |
 | **Neural network** | A type of model loosely inspired by the brain: layers of simple maths units ("neurons") connected by millions of adjustable numbers called **parameters** or **weights**. |
 | **Deep learning** | Machine learning with neural networks that have many layers. |
@@ -77,13 +77,24 @@ There are **three parts**:
 ## 4. The data
 
 ### Where it comes from
-The **BBC News dataset** (Greene & Cunningham, 2006): 2,225 real BBC articles from 2004–2005, each already labelled with one of the 5 categories. It's a well-known dataset used in research, which makes it a safe choice for a college project.
+We use **two** well-known public datasets, each already labelled with our 5 categories:
 
-We download the **original version** from the publisher (`mlg.ucd.ie`). Other copies online had all the capital letters and commas removed, and we want training text to look like real articles people will paste in.
+| Dataset | Years | What each item is | How many |
+|---|---|---|---|
+| **BBC News** (Greene & Cunningham, 2006) | 2004–05 | A full article (~380 words) | 2,104 |
+| **HuffPost News Category** (Misra, 2022) | 2012–22 | A headline + one-sentence summary (~28 words) | 10,000 (2,000 per category) |
+
+For BBC we download the **original version** from the publisher (`mlg.ucd.ie`). Other copies online had all the capital letters and commas removed, and we want training text to look like real articles people will paste in. HuffPost has 42 categories; we keep the 6 that match ours (BUSINESS and MONEY both become "business").
+
+> [!example] Why two datasets? (great viva story)
+> **Version 1** of the project used only the BBC data. It scored 98.6% on BBC's own test articles, which looked perfect. But when we tested it on **modern** news (HuffPost, 2012–22), it only got **68%**, and the simple TF-IDF model only **49%**.
+>
+> Twenty-year-old news doesn't mention iPhones, Instagram, Trump or Netflix, so the model was confused by them. Adding 10,000 modern HuffPost items fixed this: modern-news accuracy went from **68% → 88%**, and BBC accuracy stayed the same.
 
 ### Cleaning it (`training/prepare_data.py`)
-1. **Read every article** and tidy up extra spaces.
-2. **Remove duplicates.** The BBC sometimes published the same story twice with tiny edits. We found 121 of these and removed them, leaving **2,104 articles**.
+1. **Read every article** and tidy up extra spaces. HuffPost items become "headline. summary".
+2. **Remove duplicates.** The BBC sometimes published the same story twice with tiny edits. We found 121 of these and removed them, leaving **2,104 BBC articles**. For HuffPost we drop repeated headlines.
+3. **Balance HuffPost.** We take exactly 2,000 items per category, so no category dominates (HuffPost has 35,000 politics items but only 2,000 tech).
 
 > [!warning] Why duplicates matter (a good viva point)
 > If the same story is in both the training set and the test set, the model has basically "seen the exam question before". Its test score would look better than it really is. This is called **data leakage**. We prevent it by removing near-duplicates *before* splitting.
@@ -94,9 +105,11 @@ We cut the data into three piles:
 
 | Pile | Size | Used for | Analogy |
 |---|---|---|---|
-| **Train** (80%) | 1,683 | The model learns from these | Textbook and homework |
-| **Validation** (10%) | 210 | Picking the best version while training | Mock exam |
-| **Test** (10%) | 211 | Final score, used once at the very end | The real final exam |
+| **Train** (80%) | 9,683 (1,683 BBC + 8,000 HuffPost) | The model learns from these | Textbook and homework |
+| **Validation** (10%) | 1,210 (210 + 1,000) | Picking the best version while training | Mock exam |
+| **Test** (10%) | 1,211 (211 + 1,000) | Final score, used once at the very end | The real final exam |
+
+Each dataset is split separately, so both appear in every pile.
 
 - **Stratified** means each pile has the same mix of categories (e.g. ~24% business in each).
 - **Random seed 42** means the shuffle is the same every time you run it, so results are **reproducible**. (42 is just a convention; any fixed number works.)
@@ -125,7 +138,7 @@ For each category, it learns how much each word pushes towards it: "goalkeeper" 
 > [!note] Limitation
 > This model treats an article as a **bag of words**. It ignores order and context: "not good" and "good" look almost the same to it.
 
-**Result: 99.1% accuracy** (209 of 211 test articles correct). It trains in seconds and the file is 3 MB.
+**Result: 84.6% accuracy overall**: 98.1% on BBC and 81.7% on the harder modern HuffPost items. It trains in seconds and the file is 4 MB.
 
 ---
 
@@ -145,7 +158,7 @@ This is the main "AI" part of the project. Files: `training/train_bert.py` and `
 ```mermaid
 flowchart LR
     A[Pre-training<br/>by Hugging Face<br/>Wikipedia + books<br/>learns English] --> B[DistilBERT<br/>knows language<br/>but not our task]
-    B --> C[Fine-tuning<br/>by us<br/>1,683 BBC articles<br/>~15 minutes]
+    B --> C[Fine-tuning<br/>by us<br/>9,683 news articles<br/>~25 minutes]
     C --> D[Our model<br/>knows language<br/>AND news categories]
 ```
 
@@ -184,53 +197,58 @@ For each **batch** of 16 articles:
 3. **Backward pass (backpropagation):** calculate how each of the 66 million numbers should change to reduce the loss.
 4. **Optimiser step (AdamW):** nudge all the numbers a tiny bit in that direction.
 
-Going once through all 1,683 training articles is called one **epoch**. We did **4 epochs**.
+Going once through all 9,683 training articles is called one **epoch**. We did **3 epochs** (~8 minutes each).
 
 | Setting | Value | What it means |
 |---|---|---|
-| Epochs | 4 | Read the whole training set 4 times |
+| Epochs | 3 | Read the whole training set 3 times |
 | Batch size | 16 | Learn from 16 articles at a time |
 | Learning rate | 3e-5 (0.00003) | How big each nudge is. Too big and it forgets what it knew; too small and it learns slowly |
 | Warm-up | first 10% of steps | Start with tiny nudges, then go to full size, then slowly shrink to 0 |
-| Max length | 512 tokens | How much of each article it reads |
+| Max length | 512 tokens (BBC), 128 (HuffPost) | How much of each item it reads; HuffPost items are short, so 128 is plenty |
 | Device | Apple M4 GPU (MPS) | Graphics chips do the maths much faster than the CPU |
+
+> [!tip] A speed trick
+> Every batch is padded (filled with blanks) up to the same length. If a short HuffPost headline sat in a batch with a long BBC article, it would be padded to 512 tokens, which wastes time. So each batch contains only BBC or only HuffPost items, and the batches are then shuffled together. Training runs more than twice as fast.
 
 After every epoch we test on the **validation** pile and **keep the best version**:
 
-| Epoch | Training loss (lower = better) | Validation accuracy |
-|---|---|---|
-| 1 | 0.711 | 96.7% |
-| 2 | 0.058 | 97.1% |
-| 3 | 0.041 | **97.6% ← kept** |
-| 4 | 0.013 | 97.1% |
+| Epoch | Training loss (lower = better) | Validation accuracy | BBC | HuffPost |
+|---|---|---|---|---|
+| 1 | 0.634 | 88.8% | 96.7% | 87.2% |
+| 2 | 0.265 | 89.1% | 97.1% | 87.4% |
+| 3 | 0.151 | **89.8% ← kept** | 97.1% | 88.3% |
 
-> [!question] Why didn't we keep epoch 4 if its loss was lowest?
-> Lower training loss means it's getting better at the *training* articles, but validation accuracy dropped slightly. That's an early sign of **overfitting**: memorising the textbook instead of understanding it. Picking the best validation epoch avoids this.
+> [!question] What if a later epoch had been worse?
+> Then we'd keep the earlier one. Lower training loss only means it's getting better at the *training* articles. If validation accuracy drops, that's a sign of **overfitting**: memorising the textbook instead of understanding it. That actually happened in version 1 (epoch 4 was worse than epoch 3), and picking the best validation epoch protects against it.
 
-> [!note] We tried two settings
-> A first run that read only 256 tokens for 3 epochs reached 96.2% on validation. Reading up to 512 tokens did better (97.6%), so we kept that. We chose using the **validation** set only, never the test set.
-
-**Result: 98.6% test accuracy** (208 of 211 correct). The model file is 256 MB, and it takes about 35 ms per article.
+**Result: 89.6% test accuracy overall**: 98.6% on BBC and 87.7% on modern HuffPost. The model file is 256 MB, and it takes about 35 ms per article.
 
 ---
 
 ## 7. Results: how good is it?
 
-| Model | Test accuracy | Correct | Size | Speed |
-|---|---|---|---|---|
-| **DistilBERT** (AI) | **98.6%** | 208 / 211 | 256 MB | ~35 ms |
-| TF-IDF + LogReg (baseline) | 99.1% | 209 / 211 | 3 MB | ~8 ms |
+Tested on 1,211 articles the models never saw:
 
-### Wait, the simple model scored higher?!
+| Model | Overall | BBC 2004–05 | HuffPost 2012–22 | Size | Speed |
+|---|---|---|---|---|---|
+| **Combined** (used by the site) | **89.8%** | **99.1%** | **87.9%** | 260 MB | ~45 ms |
+| DistilBERT (AI) | 89.6% | 98.6% | 87.7% | 256 MB | ~35 ms |
+| TF-IDF + LogReg (baseline) | 84.6% | 98.1% | 81.7% | 4 MB | ~8 ms |
+| *Version 1 DistilBERT (BBC only)* | | *98.6%* | *68.1%* | | |
 
-Yes, by **one article**, and you should say this honestly in your viva. It's a strength of the project, not a weakness:
-- The BBC dataset is **easy**: each section uses very distinctive words. Keyword methods already get ~99% on it, which is well known in research.
-- One article out of 211 is about 0.5%, which is within **noise**. They're effectively tied.
-- On **brand-new 2026 BBC articles** (that neither model had seen, 21 years newer), **DistilBERT did better: 15/20 vs 14/20**.
-- DistilBERT is more **confident** on clear articles (~99% vs 95–99%) and understands **context**, not just keywords.
+### Why is the overall score "only" 90% when BBC is 99%?
+- **BBC is easy.** Full articles, and each section uses very distinctive words. Every model gets ~98–99% there, so BBC alone can't tell good models from great ones.
+- **HuffPost is hard.** Only a headline and one sentence (~28 words), and the categories overlap a lot. "Apple's profits jump" could be business or tech. 88% on that is strong.
+- **The hard test is what shows the neural network's value.** On HuffPost, DistilBERT beats TF-IDF by 6 points (87.7% vs 81.7%).
 
-> [!example] What it got wrong
-> All 3 DistilBERT mistakes were **business** articles it called **politics**, for example a story about the Chancellor's economic rules. Economic policy made by politicians honestly belongs in both categories.
+> [!example] The neural network's superpower (viva gold)
+> Version 1 was trained only on 2004 BBC news. On modern 2012–22 news, DistilBERT still got **68%**, while TF-IDF crashed to **49%**. DistilBERT was pre-trained on Wikipedia and books, so it already knew what "Instagram" or "Netflix" roughly were. TF-IDF only knows words it saw in training. This is **transfer learning** paying off.
+
+**Live test:** on 20 real BBC articles from 15 November 2026, the Combined model got **17/20**, up from 15/20 in version 1. The misses were stories like a Microsoft outage that the BBC filed under Business but the model called Tech, which is arguably right.
+
+> [!example] What it gets wrong
+> The most common mix-up is **business ↔ tech**: stories about tech companies' money. Next is politics vs business/entertainment. These are genuinely borderline, not silly mistakes.
 
 ### Metrics explained
 - **Accuracy:** % of articles classified correctly.
@@ -252,9 +270,9 @@ Yes, by **one article**, and you should say this honestly in your viva. It's a s
 
 | Model | Business | Politics |
 |---|---|---|
-| DistilBERT alone | 99.5% | 0.1% |
-| TF-IDF baseline | 68% | 19% |
-| **Combined (average of both)** | **83.6%** | **9.6%** |
+| Version 1 DistilBERT (BBC only) | 99.5% | 0.1% |
+| Final DistilBERT (BBC + HuffPost) | 90.1% | 9.1% |
+| **Final Combined (used by the site)** | **66.7%** | **30.8%** |
 
 **Why was DistilBERT so sure?** Every article it trained on had exactly **one** correct label. It never saw a "half business, half politics" article, so it learned to always be close to 100% sure. That's called being **overconfident** or **badly calibrated**.
 
@@ -263,12 +281,14 @@ Yes, by **one article**, and you should say this honestly in your viva. It's a s
 **What we did:** average the two models' probabilities. This is called an **ensemble**.
 - DistilBERT brings understanding of context.
 - TF-IDF brings softer, more spread-out scores.
-- Accuracy stayed exactly the same (98.6%), but the confidence is now more honest.
+- Accuracy didn't drop (it went slightly up), but the confidence is now more honest.
 
-On the site, **Combined** is the default model. Any other category scoring **8% or more** is shown as **"Also related"**, so this article shows *Business 83.6% · Also related: Politics 9.6%*.
+Adding modern HuffPost news helped here too: it has plenty of articles mixing government and money.
+
+On the site, **Combined** is the default model. Any other category scoring **8% or more** is shown as **"Also related"**, so this article shows *Business 66.7% · Also related: Politics 30.8%*.
 
 > [!tip] Viva gold
-> "The neural network was overconfident on mixed-topic articles because it was trained on single-label data. Calibration didn't help, so I used an ensemble with the baseline. Accuracy was unchanged, the confidence became more realistic, and the app can now show a secondary topic." This shows you tested the model critically, not just trained it.
+> "The neural network was overconfident on mixed-topic articles because it was trained on single-label data. Calibration didn't help, so I used an ensemble with the baseline and added modern training data. Accuracy didn't drop, the confidence became realistic, and the app now shows a secondary topic." This shows you tested the model critically, not just trained it.
 
 ---
 
@@ -387,7 +407,7 @@ To retrain from scratch:
 source .venv/bin/activate
 python training/prepare_data.py
 python training/train_baseline.py
-python training/train_bert.py      # ~15 min on your Mac
+python training/train_bert.py      # ~25 min on your Mac
 python training/evaluate.py
 ```
 
@@ -413,11 +433,11 @@ To run the tests: `pytest`
 
 ## 14. Limitations (say these before the examiner does)
 
-1. **Old data:** trained on 2004–05 British news, so it doesn't know about ChatGPT, current politicians, etc.
+1. **Data up to 2022:** the newest training news is from 2022, so it may not know newer events, people or products.
 2. **One label only:** "Tech company's profits fall" is both tech and business, but it must pick one.
 3. **Only 5 categories:** a science or health story gets forced into the closest box.
 4. **512-token limit:** it reads only the first ~380 words of very long articles.
-5. **Small test set:** 211 articles, so one mistake moves accuracy by ~0.5%.
+5. **Different styles:** BBC is British full articles and HuffPost is American headlines, so other countries' news may do slightly worse.
 
 ## 15. Future improvements
 
@@ -438,7 +458,7 @@ To run the tests: `pytest`
 > No. We used **transfer learning**: DistilBERT was already pre-trained on Wikipedia and books, and we fine-tuned it for our 5 categories. Training from scratch would need huge amounts of data and computing power.
 
 > [!question]- Why use a baseline at all?
-> To prove the neural network is worth it, and to have something to compare against. Without a baseline, "98.6%" has no context.
+> To prove the neural network is worth it, and to have something to compare against. Without a baseline, "89.6%" has no context.
 
 > [!question]- The baseline scored higher. Why use DistilBERT?
 > They're tied within noise (1 article). DistilBERT did better on new 2026 articles, understands context and word order, and is more confident on clear cases. The BBC dataset is known to be keyword-friendly.
@@ -450,7 +470,7 @@ To run the tests: `pytest`
 > When a model memorises the training data instead of learning general patterns, so it does worse on new data. We watched validation accuracy and kept the best epoch to avoid it.
 
 > [!question]- What is the "Combined" model?
-> An ensemble: the average of DistilBERT's and the TF-IDF model's probabilities. Same accuracy as DistilBERT (98.6%), but less overconfident, so it can show a second related topic for mixed articles.
+> An ensemble: the average of DistilBERT's and the TF-IDF model's probabilities. Slightly higher accuracy than DistilBERT (89.8% vs 89.6%), and less overconfident, so it can show a second related topic for mixed articles.
 
 > [!question]- What is softmax?
 > A function that turns raw scores into probabilities between 0 and 1 that add up to 1.
@@ -468,7 +488,7 @@ To run the tests: `pytest`
 > We removed 121 near-duplicate articles *before* splitting, so the same story can't appear in both training and test sets.
 
 > [!question]- Why DistilBERT and not BERT or GPT?
-> DistilBERT is 40% smaller and 60% faster than BERT with almost the same accuracy, and it trains on a laptop in ~15 minutes. GPT-style models generate text and are much larger; for picking one of 5 labels, a fine-tuned encoder like DistilBERT is the right tool.
+> DistilBERT is 40% smaller and 60% faster than BERT with almost the same accuracy, and it trains on a laptop in ~25 minutes. GPT-style models generate text and are much larger; for picking one of 5 labels, a fine-tuned encoder like DistilBERT is the right tool.
 
 > [!question]- Why not just call the ChatGPT or Claude API?
 > It would cost money per request, need an internet connection and API key, and we couldn't show training, validation or test metrics, because we wouldn't have built or trained anything. Fine-tuning our own model is the actual machine-learning work.
@@ -477,7 +497,7 @@ To run the tests: `pytest`
 > It sends an HTTP POST request with the article as JSON to `/predict`, and the backend replies with JSON containing the category and probabilities.
 
 > [!question]- How do you know it works?
-> 15 automated API tests (pytest), a held-out test set of 211 articles, and a live test on 20 current BBC articles.
+> 15 automated API tests (pytest), a held-out test set of 1,211 articles (BBC + HuffPost), and a live test on 20 current BBC articles.
 
 ---
 

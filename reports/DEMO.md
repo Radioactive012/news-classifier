@@ -16,17 +16,18 @@
 
 1. Open any story on bbc.co.uk/news (or another news site), copy the headline and text, paste it in, click **Classify article**.
 2. Switch the model toggle between **Combined**, **DistilBERT** and **TF-IDF + LogReg**: the result re-runs instantly so the models can be compared.
-3. Paste a story that mixes topics, e.g. a government investment programme. Combined shows **Business** with **Also related: Politics**. Switch to DistilBERT alone and it says business 99.5%: explain that the network is overconfident because it only ever saw single-topic articles, and combining it with TF-IDF fixes that.
+3. Paste a story that mixes topics, e.g. a government investment programme. Combined shows **Business 67%** with **Also related: Politics 31%**. Explain that version 1 of DistilBERT said business 99.5% because it only ever saw single-topic articles, and that averaging it with TF-IDF and adding modern training data fixed that.
 
 ## 4. How good is it? (40 s) — *Model performance page*
 
-1. Read the three accuracy cards: all models were tested on 211 articles never seen in training.
-2. Show the confusion matrix: "the diagonal is correct, anything red is a mistake."
-3. Show **How DistilBERT learned**: the loss falls each epoch while validation accuracy rises.
+1. Read the three accuracy cards: all models were tested on 1,211 articles never seen in training. Point at the two dataset scores: everything gets ~99% on old BBC news, but on modern HuffPost headlines the neural network beats TF-IDF by 6 points.
+2. Tell the version 1 story: trained only on 2004 BBC news, the model scored just 68% on modern news; adding 10,000 HuffPost items raised that to 88%.
+3. Show the confusion matrix: "the diagonal is correct, anything red is a mistake."
+4. Show **How DistilBERT learned**: the loss falls each epoch while validation accuracy rises.
 
 ## 5. Wrap up (20 s) — *About page*
 
-> "The article is split into tokens, DistilBERT reads them all at once using self-attention, and a softmax layer turns its output into probabilities. The main limitation is that the training news is from 2004–05, so brand-new topics can confuse it."
+> "The article is split into tokens, DistilBERT reads them all at once using self-attention, and a softmax layer turns its output into probabilities. It was trained on 12,000 articles from BBC News and HuffPost, 2004 to 2022. The main limitation is that each article gets one label, even when it covers two topics, which is why the app shows an 'also related' topic."
 
 ## If something goes wrong
 

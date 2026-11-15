@@ -4,7 +4,7 @@ Instructions for any AI coding agent working in this repository. Read this file 
 
 ## What this project is
 
-A college AI project: a web app that automatically classifies news articles into categories (sport, politics, business, tech, entertainment). The user pastes an article, and a fine-tuned DistilBERT neural network returns the predicted category with confidence scores for every class. A TF-IDF + Logistic Regression baseline exists for comparison.
+A college AI project: a web app that automatically classifies news articles into categories (sport, politics, business, tech, entertainment). The user pastes an article, and a fine-tuned DistilBERT neural network returns the predicted category with confidence scores for every class. A TF-IDF + Logistic Regression baseline exists for comparison, and the app's default "combined" model averages the two. Training data is BBC News (2004–05 full articles) plus HuffPost News Category (2012–22 headlines).
 
 The owner is a student who must demo this and explain it in a viva. Working, simple, readable code matters more than cleverness.
 

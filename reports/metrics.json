@@ -1,9 +1,19 @@
 {
   "baseline": {
     "title": "TF-IDF + Logistic Regression",
-    "accuracy": 0.990521327014218,
-    "macro_f1": 0.9900248261223872,
-    "test_size": 211,
+    "accuracy": 0.8455821635012386,
+    "macro_f1": 0.8458502324459269,
+    "test_size": 1211,
+    "by_source": {
+      "bbc": {
+        "accuracy": 0.981042654028436,
+        "test_size": 211
+      },
+      "huffpost": {
+        "accuracy": 0.817,
+        "test_size": 1000
+      }
+    },
     "labels": [
       "business",
       "entertainment",
@@ -13,79 +23,89 @@
     ],
     "per_class": {
       "business": {
-        "precision": 1.0,
-        "recall": 0.98,
-        "f1": 0.98989898989899,
-        "support": 50
+        "precision": 0.7976190476190477,
+        "recall": 0.804,
+        "f1": 0.8007968127490039,
+        "support": 250
       },
       "entertainment": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 37
+        "precision": 0.8070866141732284,
+        "recall": 0.8649789029535865,
+        "f1": 0.835030549898167,
+        "support": 237
       },
       "politics": {
-        "precision": 0.9523809523809523,
-        "recall": 1.0,
-        "f1": 0.975609756097561,
-        "support": 40
+        "precision": 0.8451882845188284,
+        "recall": 0.8416666666666667,
+        "f1": 0.8434237995824635,
+        "support": 240
       },
       "sport": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 51
+        "precision": 0.9094650205761317,
+        "recall": 0.8804780876494024,
+        "f1": 0.8947368421052632,
+        "support": 251
       },
       "tech": {
-        "precision": 1.0,
-        "recall": 0.9696969696969697,
-        "f1": 0.9846153846153847,
-        "support": 33
+        "precision": 0.874439461883408,
+        "recall": 0.8369098712446352,
+        "f1": 0.8552631578947368,
+        "support": 233
       }
     },
     "confusion_matrix": [
       [
-        49,
-        0,
-        1,
-        0,
-        0
+        201,
+        10,
+        14,
+        6,
+        19
       ],
       [
-        0,
-        37,
-        0,
-        0,
-        0
+        6,
+        205,
+        13,
+        9,
+        4
       ],
       [
-        0,
-        0,
-        40,
-        0,
-        0
+        18,
+        13,
+        202,
+        5,
+        2
       ],
       [
-        0,
-        0,
-        0,
-        51,
-        0
+        9,
+        13,
+        5,
+        221,
+        3
       ],
       [
-        0,
-        0,
-        1,
-        0,
-        32
+        18,
+        13,
+        5,
+        2,
+        195
       ]
     ]
   },
   "distilbert": {
     "title": "DistilBERT (fine-tuned)",
-    "accuracy": 0.985781990521327,
-    "macro_f1": 0.98658551732704,
-    "test_size": 211,
+    "accuracy": 0.8959537572254336,
+    "macro_f1": 0.895804719298539,
+    "test_size": 1211,
+    "by_source": {
+      "bbc": {
+        "accuracy": 0.985781990521327,
+        "test_size": 211
+      },
+      "huffpost": {
+        "accuracy": 0.877,
+        "test_size": 1000
+      }
+    },
     "labels": [
       "business",
       "entertainment",
@@ -95,114 +115,130 @@
     ],
     "per_class": {
       "business": {
-        "precision": 1.0,
-        "recall": 0.94,
-        "f1": 0.9690721649484536,
-        "support": 50
+        "precision": 0.8765432098765432,
+        "recall": 0.852,
+        "f1": 0.8640973630831643,
+        "support": 250
       },
       "entertainment": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 37
+        "precision": 0.8622047244094488,
+        "recall": 0.9240506329113924,
+        "f1": 0.8920570264765784,
+        "support": 237
       },
       "politics": {
-        "precision": 0.9302325581395349,
-        "recall": 1.0,
-        "f1": 0.963855421686747,
-        "support": 40
+        "precision": 0.9166666666666666,
+        "recall": 0.8708333333333333,
+        "f1": 0.8931623931623932,
+        "support": 240
       },
       "sport": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 51
+        "precision": 0.9322709163346613,
+        "recall": 0.9322709163346613,
+        "f1": 0.9322709163346613,
+        "support": 251
       },
       "tech": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 33
+        "precision": 0.8936170212765957,
+        "recall": 0.9012875536480687,
+        "f1": 0.8974358974358975,
+        "support": 233
       }
     },
     "confusion_matrix": [
       [
-        47,
-        0,
+        213,
+        6,
+        10,
         3,
-        0,
-        0
+        18
       ],
       [
-        0,
-        37,
-        0,
-        0,
-        0
+        4,
+        219,
+        4,
+        6,
+        4
       ],
       [
-        0,
-        0,
-        40,
-        0,
-        0
+        10,
+        13,
+        209,
+        6,
+        2
       ],
       [
-        0,
-        0,
-        0,
-        51,
-        0
+        5,
+        9,
+        2,
+        234,
+        1
       ],
       [
-        0,
-        0,
-        0,
-        0,
-        33
+        11,
+        7,
+        3,
+        2,
+        210
       ]
     ],
     "training": {
       "base_model": "distilbert-base-uncased",
       "max_length": 512,
       "batch_size": 16,
-      "epochs": 4,
+      "epochs": 3,
       "learning_rate": 3e-05,
       "device": "mps",
-      "best_val_accuracy": 0.9761904761904762,
+      "best_val_accuracy": 0.8983471074380165,
       "history": [
         {
           "epoch": 1,
-          "train_loss": 0.7112971546374401,
-          "val_accuracy": 0.9666666666666667,
-          "seconds": 194.833163022995
+          "train_loss": 0.6335068014988264,
+          "val_accuracy": 0.8884297520661157,
+          "val_by_source": {
+            "bbc": 0.9666666666666667,
+            "huffpost": 0.872
+          },
+          "seconds": 438.5065050125122
         },
         {
           "epoch": 2,
-          "train_loss": 0.05801614289576153,
-          "val_accuracy": 0.9714285714285714,
-          "seconds": 222.13881397247314
+          "train_loss": 0.2649662497610149,
+          "val_accuracy": 0.8909090909090909,
+          "val_by_source": {
+            "bbc": 0.9714285714285714,
+            "huffpost": 0.874
+          },
+          "seconds": 477.9476799964905
         },
         {
           "epoch": 3,
-          "train_loss": 0.04113487584762416,
-          "val_accuracy": 0.9761904761904762,
-          "seconds": 208.6858320236206
-        },
-        {
-          "epoch": 4,
-          "train_loss": 0.012534761471884712,
-          "val_accuracy": 0.9714285714285714,
-          "seconds": 224.92870712280273
+          "train_loss": 0.150794031936829,
+          "val_accuracy": 0.8983471074380165,
+          "val_by_source": {
+            "bbc": 0.9714285714285714,
+            "huffpost": 0.883
+          },
+          "seconds": 490.6055066585541
         }
       ]
     }
   },
   "combined": {
     "title": "DistilBERT + TF-IDF (combined)",
-    "accuracy": 0.985781990521327,
-    "macro_f1": 0.98658551732704,
-    "test_size": 211,
+    "accuracy": 0.8984310487200661,
+    "macro_f1": 0.8982564387145461,
+    "test_size": 1211,
+    "by_source": {
+      "bbc": {
+        "accuracy": 0.990521327014218,
+        "test_size": 211
+      },
+      "huffpost": {
+        "accuracy": 0.879,
+        "test_size": 1000
+      }
+    },
     "labels": [
       "business",
       "entertainment",
@@ -212,71 +248,71 @@
     ],
     "per_class": {
       "business": {
-        "precision": 1.0,
-        "recall": 0.94,
-        "f1": 0.9690721649484536,
-        "support": 50
+        "precision": 0.8833333333333333,
+        "recall": 0.848,
+        "f1": 0.8653061224489796,
+        "support": 250
       },
       "entertainment": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 37
+        "precision": 0.8795180722891566,
+        "recall": 0.9240506329113924,
+        "f1": 0.9012345679012346,
+        "support": 237
       },
       "politics": {
-        "precision": 0.9302325581395349,
-        "recall": 1.0,
-        "f1": 0.963855421686747,
-        "support": 40
+        "precision": 0.9102564102564102,
+        "recall": 0.8875,
+        "f1": 0.8987341772151899,
+        "support": 240
       },
       "sport": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 51
+        "precision": 0.924901185770751,
+        "recall": 0.9322709163346613,
+        "f1": 0.9285714285714286,
+        "support": 251
       },
       "tech": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "support": 33
+        "precision": 0.8936170212765957,
+        "recall": 0.9012875536480687,
+        "f1": 0.8974358974358975,
+        "support": 233
       }
     },
     "confusion_matrix": [
       [
-        47,
-        0,
+        212,
+        5,
+        10,
+        4,
+        19
+      ],
+      [
+        2,
+        219,
+        6,
+        7,
+        3
+      ],
+      [
+        8,
+        11,
+        213,
+        6,
+        2
+      ],
+      [
+        6,
+        8,
+        2,
+        234,
+        1
+      ],
+      [
+        12,
+        6,
         3,
-        0,
-        0
-      ],
-      [
-        0,
-        37,
-        0,
-        0,
-        0
-      ],
-      [
-        0,
-        0,
-        40,
-        0,
-        0
-      ],
-      [
-        0,
-        0,
-        0,
-        51,
-        0
-      ],
-      [
-        0,
-        0,
-        0,
-        0,
-        33
+        2,
+        210
       ]
     ]
   }

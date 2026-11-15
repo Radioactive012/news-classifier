@@ -12,7 +12,7 @@ A web app where the user pastes a news article and gets back the predicted categ
 
 | Area | Choice | Why |
 |---|---|---|
-| Dataset | BBC News, 2,225 articles in 5 classes: sport, politics, business, tech, entertainment | Matches the required categories and is small enough to train on a laptop |
+| Dataset | BBC News (2,225 full articles, 2004–05) + HuffPost News Category (2,000 headlines per class, 2012–22), 5 classes | BBC matches the categories exactly; HuffPost adds modern news (version 1 on BBC only scored 68% on modern news) |
 | Baseline model | TF-IDF + Logistic Regression (scikit-learn) | Trains in seconds and gives a comparison point |
 | Main model | Fine-tuned `distilbert-base-uncased` (Hugging Face Transformers, PyTorch) | A real neural network that trains in roughly 10–20 minutes |
 | Backend | FastAPI | Simple, loads the model once at startup |
@@ -23,6 +23,8 @@ Entertainment is a fifth category that comes with the dataset. Keep it.
 ## Phase 1: Data
 
 - Download the BBC News dataset from its original publisher: `http://mlg.ucd.ie/files/datasets/bbc-fulltext.zip`. Use this copy, not the Hugging Face or Kaggle ones, because it keeps capitals and punctuation like real articles.
+- Download the HuffPost News Category dataset (`heegyu/news-category-dataset` on Hugging Face, CC BY 4.0). Map BUSINESS+MONEY, ENTERTAINMENT, POLITICS, SPORTS, TECH to our labels and sample 2,000 per class.
+- Split each dataset separately and save a `source` column (`bbc` / `huffpost`) so results can be reported per dataset.
 - Clean the text: strip extra whitespace, drop empty rows, drop duplicates and near-duplicates (same opening 200 letters).
 - Stratified 80/10/10 train/validation/test split with seed 42.
 - Save `data/train.csv`, `data/val.csv`, `data/test.csv` with columns `text` and `label`.
@@ -42,7 +44,7 @@ Entertainment is a fifth category that comes with the dataset. Keep it.
 ## Phase 3: Neural model (DistilBERT)
 
 - `train_bert.py`: fine-tune `distilbert-base-uncased` for 5-class classification.
-- Settings: max length 512, batch size 16, 4 epochs, learning rate 3e-5 with 10% warm-up then linear decay, seed 42.
+- Settings: max length 512 (BBC) / 128 (HuffPost, batched separately), batch size 16, 3 epochs, learning rate 3e-5 with 10% warm-up then linear decay, seed 42.
 - (A first run with max length 256, 3 epochs and learning rate 2e-5 reached 96.2% validation accuracy; reading whole articles was tried next and the better run by validation accuracy was kept. The test split was not used to choose.)
 - Device: CUDA, then Apple MPS, then CPU.
 - Evaluate on validation after each epoch and keep the best checkpoint.

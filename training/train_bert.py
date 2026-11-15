@@ -23,8 +23,12 @@ from common import DATA_DIR, MODEL_DIR, SEED, load_labels
 BASE_MODEL = "distilbert-base-uncased"
 OUTPUT_DIR = MODEL_DIR / "distilbert"
 MAX_LENGTH = 512  # tokens (the most DistilBERT can read); covers most whole articles
+# HuffPost items are a headline plus one sentence, so 128 tokens is plenty.
+# Batching each source separately keeps short texts from being padded to 512,
+# which makes training more than twice as fast.
+SOURCE_MAX_LENGTH = {"bbc": MAX_LENGTH, "huffpost": 128}
 BATCH_SIZE = 16
-EPOCHS = 4
+EPOCHS = 3
 LEARNING_RATE = 3e-5
 WARMUP_FRACTION = 0.1
 
@@ -43,12 +47,12 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
 
 
-def encode(tokenizer, frame: pd.DataFrame, label_to_id: dict[str, int]) -> TensorDataset:
+def encode(tokenizer, frame: pd.DataFrame, label_to_id: dict[str, int], max_length: int) -> TensorDataset:
     """Turn articles into token ids the network understands."""
     tokens = tokenizer(
         frame["text"].tolist(),
         truncation=True,
-        max_length=MAX_LENGTH,
+        max_length=max_length,
         padding="max_length",
         return_tensors="pt",
     )
@@ -82,16 +86,21 @@ def main() -> None:
         label2id=label_to_id,
     ).to(device)
 
-    train_set = encode(tokenizer, pd.read_csv(DATA_DIR / "train.csv"), label_to_id)
-    val_set = encode(tokenizer, pd.read_csv(DATA_DIR / "val.csv"), label_to_id)
+    train_frame = pd.read_csv(DATA_DIR / "train.csv")
+    val_frame = pd.read_csv(DATA_DIR / "val.csv")
     generator = torch.Generator().manual_seed(SEED)
-    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, generator=generator)
-    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE * 2)
+    train_loaders, val_loaders = [], {}
+    for source, max_length in SOURCE_MAX_LENGTH.items():
+        part = encode(tokenizer, train_frame[train_frame["source"] == source], label_to_id, max_length)
+        train_loaders.append(DataLoader(part, batch_size=BATCH_SIZE, shuffle=True, generator=generator))
+        part = encode(tokenizer, val_frame[val_frame["source"] == source], label_to_id, max_length)
+        val_loaders[source] = DataLoader(part, batch_size=BATCH_SIZE * 2)
+    steps_per_epoch = sum(len(loader) for loader in train_loaders)
 
     # AdamW optimiser; the learning rate warms up for the first 10% of steps
     # and then falls linearly to zero, the standard recipe for fine-tuning BERT.
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
-    total_steps = EPOCHS * len(train_loader)
+    total_steps = EPOCHS * steps_per_epoch
     warmup_steps = int(WARMUP_FRACTION * total_steps)
 
     def lr_factor(step: int) -> float:
@@ -107,7 +116,10 @@ def main() -> None:
         model.train()
         started = time.time()
         running_loss = 0.0
-        for step, (input_ids, attention_mask, targets) in enumerate(train_loader, start=1):
+        # Mix the BBC and HuffPost batches together in a random order.
+        batches = [batch for loader in train_loaders for batch in loader]
+        random.shuffle(batches)
+        for step, (input_ids, attention_mask, targets) in enumerate(batches, start=1):
             # Passing labels makes the model return the cross-entropy loss.
             output = model(
                 input_ids=input_ids.to(device),
@@ -120,14 +132,18 @@ def main() -> None:
             scheduler.step()
             optimizer.zero_grad()
             running_loss += output.loss.item()
-            if step % 20 == 0 or step == len(train_loader):
-                print(f"  epoch {epoch} step {step}/{len(train_loader)} loss {running_loss / step:.4f}", flush=True)
+            if step % 50 == 0 or step == steps_per_epoch:
+                print(f"  epoch {epoch} step {step}/{steps_per_epoch} loss {running_loss / step:.4f}", flush=True)
 
-        train_loss = running_loss / len(train_loader)
-        val_accuracy = accuracy_on(model, val_loader, device)
+        train_loss = running_loss / steps_per_epoch
+        by_source = {source: accuracy_on(model, loader, device) for source, loader in val_loaders.items()}
+        sizes = {source: len(loader.dataset) for source, loader in val_loaders.items()}
+        val_accuracy = sum(by_source[s] * sizes[s] for s in sizes) / sum(sizes.values())
         seconds = time.time() - started
-        history.append({"epoch": epoch, "train_loss": train_loss, "val_accuracy": val_accuracy, "seconds": seconds})
-        print(f"Epoch {epoch}: train loss {train_loss:.4f}, validation accuracy {val_accuracy:.2%}, {seconds:.0f}s")
+        history.append({"epoch": epoch, "train_loss": train_loss, "val_accuracy": val_accuracy,
+                        "val_by_source": by_source, "seconds": seconds})
+        print(f"Epoch {epoch}: train loss {train_loss:.4f}, validation accuracy {val_accuracy:.2%} "
+              f"(BBC {by_source['bbc']:.2%}, HuffPost {by_source['huffpost']:.2%}), {seconds:.0f}s")
 
         if val_accuracy > best_val:
             best_val = val_accuracy

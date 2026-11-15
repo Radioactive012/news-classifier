@@ -16,6 +16,21 @@ SEED = 42
 DATASET_URL = "http://mlg.ucd.ie/files/datasets/bbc-fulltext.zip"
 ZIP_PATH = DATA_DIR / "bbc-fulltext.zip"
 
+# HuffPost News Category Dataset (Misra, 2022; CC BY 4.0): headlines and short
+# descriptions from 2012-2022. Adds modern, American news to the 2004-05 BBC
+# articles, so the model knows newer topics (smartphones, social media, Trump).
+HUFFPOST_URL = "https://huggingface.co/datasets/heegyu/news-category-dataset/resolve/main/data.json"
+HUFFPOST_PATH = DATA_DIR / "huffpost" / "data.json"
+HUFFPOST_LABELS = {
+    "BUSINESS": "business",
+    "MONEY": "business",
+    "ENTERTAINMENT": "entertainment",
+    "POLITICS": "politics",
+    "SPORTS": "sport",
+    "TECH": "tech",
+}
+HUFFPOST_PER_CATEGORY = 2000  # tech only has about 2,000, so every category gets the same
+
 
 def download(url: str, path: Path) -> None:
     if path.exists():
@@ -41,6 +56,26 @@ def load_articles() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def load_huffpost() -> pd.DataFrame:
+    HUFFPOST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    download(HUFFPOST_URL, HUFFPOST_PATH)
+    rows = pd.read_json(HUFFPOST_PATH, lines=True)
+    rows = rows[rows["category"].isin(HUFFPOST_LABELS)]
+    rows = rows.drop_duplicates(subset="headline")
+    rows["text"] = rows["headline"].str.strip() + ". " + rows["short_description"].str.strip()
+    rows["label"] = rows["category"].map(HUFFPOST_LABELS)
+    # The same number of articles per category, picked at random (but repeatably).
+    rows = rows.groupby("label").sample(n=HUFFPOST_PER_CATEGORY, random_state=SEED)
+    return rows[["text", "label"]]
+
+
+def split(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Stratified 80/10/10 train/validation/test split."""
+    train, holdout = train_test_split(frame, test_size=0.2, stratify=frame["label"], random_state=SEED)
+    val, test = train_test_split(holdout, test_size=0.5, stratify=holdout["label"], random_state=SEED)
+    return train, val, test
+
+
 def dedup_key(text: str) -> str:
     """First 200 letters and digits. The BBC republished some stories with a
     few words changed or extra paragraphs added; those share the same opening,
@@ -50,30 +85,30 @@ def dedup_key(text: str) -> str:
 
 def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    articles = load_articles()
-    raw_count = len(articles)
+    bbc = load_articles()
+    raw_count = len(bbc)
+    bbc["text"] = bbc["text"].str.replace(r"\s+", " ", regex=True).str.strip()
+    bbc = bbc[bbc["text"] != ""]
+    bbc = bbc[~bbc["text"].map(dedup_key).duplicated()]
+    print(f"BBC News 2004-05: {raw_count} articles, {len(bbc)} after removing duplicates")
 
-    articles["text"] = articles["text"].str.replace(r"\s+", " ", regex=True).str.strip()
-    articles = articles[articles["text"] != ""]
-    articles = articles[~articles["text"].map(dedup_key).duplicated()]
-    labels = sorted(articles["label"].unique())
-    print("Source: BBC News original full text (mlg.ucd.ie)")
-    print(f"Raw articles: {raw_count}")
-    print(f"Clean articles: {len(articles)}")
+    huffpost = load_huffpost()
+    huffpost["text"] = huffpost["text"].str.replace(r"\s+", " ", regex=True).str.strip()
+    print(f"HuffPost 2012-22: {len(huffpost)} articles ({HUFFPOST_PER_CATEGORY} per category)")
 
-    train, holdout = train_test_split(
-        articles, test_size=0.2, stratify=articles["label"], random_state=SEED
-    )
-    val, test = train_test_split(
-        holdout, test_size=0.5, stratify=holdout["label"], random_state=SEED
-    )
+    # Each source is split on its own, so both appear in train, validation and
+    # test in the same proportions. The BBC split is the same as before.
+    splits = {"train": [], "val": [], "test": []}
+    for source, frame in (("bbc", bbc), ("huffpost", huffpost)):
+        for name, part in zip(splits, split(frame)):
+            splits[name].append(part.assign(source=source))
 
-    for name, split in (("train", train), ("val", val), ("test", test)):
-        split.to_csv(DATA_DIR / f"{name}.csv", columns=["text", "label"], index=False)
-        counts = split["label"].value_counts()
-        print(f"{name}: {len(split)} rows")
-        for label in labels:
-            print(f"  {label}: {counts.get(label, 0)}")
+    labels = sorted(bbc["label"].unique())
+    for name, parts in splits.items():
+        frame = pd.concat(parts, ignore_index=True)
+        frame.to_csv(DATA_DIR / f"{name}.csv", columns=["text", "label", "source"], index=False)
+        print(f"\n{name}: {len(frame)} rows")
+        print(pd.crosstab(frame["label"], frame["source"], margins=True, margins_name="total").to_string())
 
     (DATA_DIR / "labels.json").write_text(json.dumps(labels, indent=2) + "\n", encoding="utf-8")
 
