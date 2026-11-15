@@ -66,7 +66,7 @@ Run from the project root with the virtual environment active:
 ```sh
 python training/prepare_data.py     # download + split the data (seconds)
 python training/train_baseline.py   # TF-IDF + Logistic Regression (seconds)
-python training/train_bert.py       # fine-tune DistilBERT (about 30 min on an Apple M-series Mac, a few minutes on a GPU)
+python training/train_bert.py       # fine-tune DistilBERT (about 15 min on an Apple M-series Mac, a few minutes on a GPU)
 python training/evaluate.py         # test DistilBERT and save its metrics
 ```
 
