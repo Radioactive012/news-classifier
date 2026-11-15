@@ -106,7 +106,7 @@ All pages: loading, error and empty states; works on mobile; clear message when 
 ## Progress
 
 - [x] Phase 1: Data
-- [ ] Phase 2: Baseline model
+- [x] Phase 2: Baseline model
 - [ ] Phase 3: Neural model
 - [ ] Phase 4: Backend API
 - [ ] Phase 5: Frontend
