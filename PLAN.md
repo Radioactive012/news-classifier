@@ -42,7 +42,8 @@ Entertainment is a fifth category that comes with the dataset. Keep it.
 ## Phase 3: Neural model (DistilBERT)
 
 - `train_bert.py`: fine-tune `distilbert-base-uncased` for 5-class classification.
-- Settings: max length 256, batch size 16, 3 epochs, learning rate 2e-5, seed 42.
+- Settings: max length 512, batch size 16, 4 epochs, learning rate 3e-5 with 10% warm-up then linear decay, seed 42.
+- (A first run with max length 256, 3 epochs and learning rate 2e-5 reached 96.2% validation accuracy; reading whole articles was tried next and the better run by validation accuracy was kept. The test split was not used to choose.)
 - Device: CUDA, then Apple MPS, then CPU.
 - Evaluate on validation after each epoch and keep the best checkpoint.
 - Save model and tokenizer to `models/distilbert/`.

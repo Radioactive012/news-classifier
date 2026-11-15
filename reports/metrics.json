@@ -1,0 +1,84 @@
+{
+  "baseline": {
+    "title": "TF-IDF + Logistic Regression",
+    "accuracy": 0.990521327014218,
+    "macro_f1": 0.9900248261223872,
+    "test_size": 211,
+    "labels": [
+      "business",
+      "entertainment",
+      "politics",
+      "sport",
+      "tech"
+    ],
+    "per_class": {
+      "business": {
+        "precision": 1.0,
+        "recall": 0.98,
+        "f1": 0.98989898989899,
+        "support": 50
+      },
+      "entertainment": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 37
+      },
+      "politics": {
+        "precision": 0.9523809523809523,
+        "recall": 1.0,
+        "f1": 0.975609756097561,
+        "support": 40
+      },
+      "sport": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 51
+      },
+      "tech": {
+        "precision": 1.0,
+        "recall": 0.9696969696969697,
+        "f1": 0.9846153846153847,
+        "support": 33
+      }
+    },
+    "confusion_matrix": [
+      [
+        49,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        37,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        40,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        51,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        32
+      ]
+    ]
+  }
+}

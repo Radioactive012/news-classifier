@@ -25,7 +25,7 @@ The owner is a student who must demo this and explain it in a viva. Working, sim
 
 - Python 3.10+ with a virtual environment in `.venv/`
 - Data and baseline: pandas, scikit-learn, joblib
-- Neural model: PyTorch + Hugging Face `transformers` and `datasets`, model `distilbert-base-uncased`
+- Neural model: PyTorch + Hugging Face `transformers` (plain PyTorch training loop, no `Trainer`), model `distilbert-base-uncased`
 - Backend: FastAPI + uvicorn, tests with pytest
 - Frontend: React + Vite + Tailwind CSS (plain JavaScript, no TypeScript)
 - Charts: Recharts
@@ -39,7 +39,8 @@ news-classifier/
   README.md
   requirements.txt
   data/        raw data and train/val/test CSVs
-  training/    prepare_data.py, train_baseline.py, train_bert.py, evaluate.py
+  training/    prepare_data.py, train_baseline.py, train_bert.py, evaluate.py, common.py
+  scripts/     fetch_live_articles.py (manual test on current BBC news)
   models/      baseline.joblib and distilbert/
   reports/     metrics.json and confusion matrix images
   backend/     FastAPI app (main.py, classifier.py, tests/)
@@ -75,6 +76,8 @@ uvicorn backend.main:app --reload --port 8000
 pytest backend/tests
 
 cd frontend && npm install && npm run dev
+
+./start.sh   # build frontend + serve everything at http://localhost:8000
 ```
 
 ## Frontend quality bar
