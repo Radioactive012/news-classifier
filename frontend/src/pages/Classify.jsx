@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { classify } from '../api.js'
-import { MODELS, MODEL_SHORT, category, percent } from '../categories.js'
+import { category, percent } from '../categories.js'
 import { SAMPLES } from '../samples.js'
 
 const MIN_WORDS = 20
 const HISTORY_KEY = 'news-classifier-history'
 const HISTORY_SIZE = 6
+// The site uses one model: DistilBERT and TF-IDF combined (the most accurate).
+const MODEL = 'combined'
 
 function loadHistory() {
   try {
@@ -27,26 +29,16 @@ const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0)
 
 export default function Classify({ health }) {
   const [text, setText] = useState('')
-  const [model, setModel] = useState('combined')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const [history, setHistory] = useState(loadHistory)
   const resultRef = useRef(null)
 
-  const available = health?.models ?? {}
   const words = countWords(text)
   const tooShort = words > 0 && words < MIN_WORDS
 
-  // If a model is not trained yet, fall back to one that is.
-  useEffect(() => {
-    if (health?.models && !health.models[model]) {
-      const ready = MODELS.find((option) => health.models[option.id])
-      if (ready) setModel(ready.id)
-    }
-  }, [health, model])
-
-  async function run(articleText = text, modelId = model) {
+  async function run(articleText = text) {
     if (countWords(articleText) < MIN_WORDS || loading) return
     setLoading(true)
     setError('')
@@ -56,7 +48,7 @@ export default function Classify({ health }) {
     }
     try {
       // Wait at least a moment so the "AI is thinking" steps are visible.
-      const [prediction] = await Promise.all([classify(articleText, modelId), new Promise((r) => setTimeout(r, 900))])
+      const [prediction] = await Promise.all([classify(articleText, MODEL), new Promise((r) => setTimeout(r, 900))])
       setResult(prediction)
       const entry = {
         id: Date.now(),
@@ -64,9 +56,8 @@ export default function Classify({ health }) {
         snippet: articleText.trim().slice(0, 110),
         category: prediction.category,
         confidence: prediction.confidence,
-        model: prediction.model,
       }
-      const next = [entry, ...history.filter((item) => item.text !== articleText || item.model !== modelId)].slice(0, HISTORY_SIZE)
+      const next = [entry, ...history.filter((item) => item.text !== articleText)].slice(0, HISTORY_SIZE)
       setHistory(next)
       saveHistory(next)
     } catch (err) {
@@ -81,12 +72,6 @@ export default function Classify({ health }) {
     setText(sample.text)
     setError('')
     run(sample.text)
-  }
-
-  function switchModel(id) {
-    setModel(id)
-    // Re-run straight away so the models are easy to compare.
-    if (result && words >= MIN_WORDS) run(text, id)
   }
 
   return (
@@ -138,33 +123,6 @@ export default function Classify({ health }) {
             </div>
           </div>
 
-          <fieldset className="mt-6">
-            <legend className="label mb-2.5">Pick a brain</legend>
-            <div className="grid grid-cols-3 gap-2">
-              {MODELS.map((option) => {
-                const ready = available[option.id] !== false
-                const active = model === option.id
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => switchModel(option.id)}
-                    disabled={!ready || loading}
-                    aria-pressed={active}
-                    title={ready ? option.detail : 'Not trained yet'}
-                    className={`rounded-xl border-2 border-ink px-2 py-2 text-center transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                      active ? 'bg-ink text-white shadow-[3px_3px_0_0_var(--color-sun)]' : 'bg-white hover:bg-paper'
-                    }`}
-                  >
-                    <span className="block text-xl" aria-hidden="true">{option.emoji}</span>
-                    <span className="block text-sm font-bold">{option.name}</span>
-                    <span className={`block text-[11px] ${active ? 'text-white/70' : 'text-ink/50'}`}>{option.detail}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </fieldset>
-
           <div className="mt-6 flex gap-3">
             {text && (
               <button
@@ -192,9 +150,9 @@ export default function Classify({ health }) {
           {error ? (
             <ErrorState message={error} onRetry={words >= MIN_WORDS ? () => run() : null} />
           ) : loading ? (
-            <LoadingState model={model} />
+            <LoadingState />
           ) : result ? (
-            <Result key={result.category + result.confidence + result.model} result={result} />
+            <Result key={result.category + result.confidence} result={result} />
           ) : (
             <EmptyState />
           )}
@@ -205,8 +163,7 @@ export default function Classify({ health }) {
         items={history}
         onOpen={(item) => {
           setText(item.text)
-          setModel(item.model)
-          run(item.text, item.model)
+          run(item.text)
         }}
         onClear={() => { setHistory([]); saveHistory([]) }}
       />
@@ -372,7 +329,7 @@ function Result({ result }) {
 
         <dl className="mt-6 grid grid-cols-3 gap-2 text-center text-sm">
           {[
-            ['Brain', MODEL_SHORT[result.model]],
+            ['Brain', 'DistilBERT + TF-IDF'],
             ['Words', result.word_count.toLocaleString()],
             ['Speed', `${Math.round(result.elapsed_ms)} ms`],
           ].map(([term, value]) => (
@@ -392,27 +349,15 @@ function Result({ result }) {
   )
 }
 
-const THINKING_STEPS = {
-  combined: [
-    ['✂️', 'Chopping the text into tokens'],
-    ['🧠', 'DistilBERT reading with self-attention'],
-    ['🔢', 'TF-IDF counting the clue words'],
-    ['🤝', 'Averaging both opinions'],
-  ],
-  distilbert: [
-    ['✂️', 'Chopping the text into tokens'],
-    ['🧠', 'Running 6 Transformer layers'],
-    ['📊', 'Softmax → probabilities'],
-  ],
-  baseline: [
-    ['🔢', 'Scoring every word with TF-IDF'],
-    ['⚖️', 'Weighing words per category'],
-    ['📊', 'Turning scores into probabilities'],
-  ],
-}
+const THINKING_STEPS = [
+  ['✂️', 'Chopping the text into tokens'],
+  ['🧠', 'DistilBERT reading with self-attention'],
+  ['🔢', 'TF-IDF counting the clue words'],
+  ['🤝', 'Averaging both opinions'],
+]
 
-function LoadingState({ model }) {
-  const steps = THINKING_STEPS[model] ?? THINKING_STEPS.combined
+function LoadingState() {
+  const steps = THINKING_STEPS
   const [step, setStep] = useState(0)
   useEffect(() => {
     const timer = setInterval(() => setStep((s) => Math.min(s + 1, steps.length - 1)), 260)
@@ -505,7 +450,7 @@ function History({ items, onOpen, onClear }) {
                   <span className="font-display font-extrabold tabular-nums">{Math.floor(item.confidence * 100)}%</span>
                 </div>
                 <p className="line-clamp-2 px-3 pt-2 text-sm text-ink/80">{item.snippet}…</p>
-                <p className="px-3 pb-2.5 pt-1 text-[11px] font-bold uppercase tracking-widest text-ink/40">{MODEL_SHORT[item.model]}</p>
+                <div className="pb-2.5" />
               </button>
             </li>
           )

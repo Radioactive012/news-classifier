@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { getHealth } from './api.js'
-import { category } from './categories.js'
-import { SAMPLES } from './samples.js'
 import Classify from './pages/Classify.jsx'
 import Performance from './pages/Performance.jsx'
 import About from './pages/About.jsx'
+import WakeUpPanel from './components/WakeUpPanel.jsx'
 
 const LINKS = [
   { to: '/', label: 'Classify', emoji: '🔍' },
@@ -16,20 +15,48 @@ const LINKS = [
 export default function App() {
   // null = still checking, otherwise the /health response or an error
   const [health, setHealth] = useState(null)
+  // 'hidden' | 'waking' | 'ready' | 'dismissed': the wake-up game panel
+  const [panel, setPanel] = useState('hidden')
+  const ready = Boolean(health && !health.error)
 
   useEffect(() => {
-    const check = () =>
-      getHealth()
-        .then(setHealth)
-        .catch((error) => setHealth({ error: error.message }))
+    let timer
+    let stopped = false
+    // Check again soon while the server is asleep, slowly once it is up.
+    const check = async () => {
+      let ok = false
+      try {
+        setHealth(await getHealth())
+        ok = true
+      } catch (error) {
+        setHealth({ error: error.message })
+      }
+      if (!stopped) timer = setTimeout(check, ok ? 15000 : 4000)
+    }
     check()
-    const timer = setInterval(check, 15000)
-    return () => clearInterval(timer)
+    return () => {
+      stopped = true
+      clearTimeout(timer)
+    }
   }, [])
+
+  // A sleeping free server answers slowly. Only open the game if the AI is
+  // still not ready after 1.5 s, so it never flashes up when the server is awake.
+  useEffect(() => {
+    if (ready || panel !== 'hidden') return
+    const timer = setTimeout(() => setPanel('waking'), 1500)
+    return () => clearTimeout(timer)
+  }, [ready, panel])
+
+  useEffect(() => {
+    if (ready && panel === 'waking') setPanel('ready')
+  }, [ready, panel])
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Ticker />
+      {(panel === 'waking' || panel === 'ready') && (
+        <WakeUpPanel ready={ready} failed={Boolean(health?.error)} onClose={() => setPanel('dismissed')} />
+      )}
       <header className="sticky top-0 z-20 border-b-2 border-ink bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
           <NavLink to="/" className="group flex items-center gap-2.5">
@@ -75,28 +102,6 @@ export default function App() {
       <footer className="border-t-2 border-ink bg-ink py-6 text-center text-sm text-white/70">
         Built with a fine-tuned <span className="font-semibold text-sun">DistilBERT</span> neural network · College AI project
       </footer>
-    </div>
-  )
-}
-
-// A scrolling "breaking news" strip made of the sample headlines.
-function Ticker() {
-  const items = [...SAMPLES, ...SAMPLES]
-  return (
-    <div className="overflow-hidden border-b-2 border-ink bg-red-500 text-white" aria-hidden="true">
-      <div className="flex">
-        <span className="z-10 shrink-0 bg-ink px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-sun">
-          ● Live
-        </span>
-        <div className="flex animate-ticker whitespace-nowrap py-1.5 text-xs font-semibold">
-          {items.map((sample, i) => (
-            <span key={i} className="mx-6">
-              <span className="mr-2 rounded bg-white/20 px-1.5 py-0.5 uppercase">{category(sample.label).emoji} {category(sample.label).name}</span>
-              {sample.title}
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

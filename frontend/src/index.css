@@ -65,14 +65,6 @@ body {
 }
 .animate-stamp { animation: stamp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-/* Breaking-news ticker */
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.animate-ticker { animation: ticker 40s linear infinite; }
-.animate-ticker:hover { animation-play-state: paused; }
-
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
   50% { transform: translateY(-8px) rotate(var(--r, 0deg)); }

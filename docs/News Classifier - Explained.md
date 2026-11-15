@@ -324,18 +324,18 @@ Folder: `frontend/`. Built with:
 - **Recharts:** draws the training chart.
 
 ### The look
-A playful "pop newspaper" style: cream paper background with faint newsprint dots, thick black outlines, chunky shadows, and a bright colour per category (⚽ lime, 🏛️ red, 💼 blue, 💻 purple, 🎬 pink). A red **LIVE** ticker scrolls the sample headlines across the top.
+A playful "pop newspaper" style: cream paper background with faint newsprint dots, thick black outlines, chunky shadows, and a bright colour per category (⚽ lime, 🏛️ red, 💼 blue, 💻 purple, 🎬 pink).
 
 ### The 3 pages
 1. **Classify (home)**
    - Text box with a word counter.
    - "Try a sample" buttons: 5 articles written for this project, so they're not in the training data.
-   - **Pick a brain:** Combined (default), DistilBERT or TF-IDF. Switching re-runs instantly so you can compare.
+   - **One model:** the site always uses the best one, DistilBERT + TF-IDF combined. The other two were only used to prove it's the best (see the Performance page).
    - **While it thinks:** the AI's real steps tick off one by one (chop into tokens → DistilBERT reads → TF-IDF counts words → average). Great for explaining the pipeline in a demo.
    - **The verdict:** the category lands like a rubber stamp in a panel of its colour, with confetti when the AI is 80%+ sure, the confidence %, bars for all 5 categories, "Also related" chips, clue words, and the time taken.
    - A warning if confidence is under 60% ("might cover more than one topic").
    - Recent predictions as little cards, saved in your browser.
-2. **Performance:** the three models' report cards (with BBC vs HuffPost bars), "the glow-up" (68% → 88% on modern news after adding HuffPost), a per-category table with the best score highlighted, confusion matrices, and the training chart.
+2. **Performance:** the final grade (89.8%, with BBC vs HuffPost bars), "Why this model?" comparing the three models we tried, "the glow-up" (68% → 88% on modern news after adding HuffPost), a per-category table with the best score highlighted, confusion matrices, and the training chart.
 3. **How it works:** the problem statement, the 3 steps as comic panels (with example tokens and mini bars), the datasets, the three models, limitations and tools.
 
 It also handles **errors** ("Backend offline", 😵 card with a retry button), works on **phones**, and turns off animations for people who set "reduce motion" on their device.

@@ -16,12 +16,4 @@ export function category(label) {
   return CATEGORIES[label] ?? { ...FALLBACK, name, short: name }
 }
 
-export const MODELS = [
-  { id: 'combined', name: 'Combined', detail: 'Recommended', emoji: '🤝' },
-  { id: 'distilbert', name: 'DistilBERT', detail: 'Neural network', emoji: '🧠' },
-  { id: 'baseline', name: 'TF-IDF', detail: 'Word counting', emoji: '🔢' },
-]
-
-export const MODEL_SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF' }
-
 export const percent = (value, digits = 1) => `${(value * 100).toFixed(digits)}%`

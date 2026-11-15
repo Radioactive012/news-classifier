@@ -3,14 +3,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { getMetrics } from '../api.js'
 import { category, percent } from '../categories.js'
 
-const ORDER = ['combined', 'distilbert', 'baseline']
-const SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF' }
 const SOURCES = { bbc: '📻 BBC 2004–05', huffpost: '📱 HuffPost 2012–22' }
-const LOOK = {
-  combined: { kind: '🏆 Used by the app', bg: 'bg-sun' },
-  distilbert: { kind: '🧠 Neural network', bg: 'bg-violet-200' },
-  baseline: { kind: '🔢 Classic baseline', bg: 'bg-white' },
-}
 
 // Version 1 was trained on BBC articles only. These are its scores on the same
 // HuffPost test set (from evaluating the backed-up v1 models, see reports/REPORT.md).
@@ -45,8 +38,8 @@ export default function Performance() {
     )
   }
 
-  const models = ORDER.filter((id) => metrics[id])
-  const labels = metrics[models[0]].labels
+  const main = metrics.combined ?? metrics.distilbert ?? metrics.baseline
+  const labels = main.labels
 
   return (
     <div className="space-y-14">
@@ -54,13 +47,14 @@ export default function Performance() {
         <p className="label mb-3">📊 The report card</p>
         <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl">How good is the AI?</h1>
         <p className="mt-4 text-lg text-ink/70 text-pretty">
-          Every model sat the same exam: <b>{metrics[models[0]].test_size.toLocaleString()} articles it had never seen</b>,
-          from 2004–05 BBC News and 2012–22 HuffPost.
+          The AI sat an exam of <b>{main.test_size.toLocaleString()} articles it had never seen</b>, from 2004–05 BBC News
+          and 2012–22 HuffPost.
         </p>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        {models.map((id, i) => <SummaryCard key={id} id={id} data={metrics[id]} rank={i} />)}
+      <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+        <SummaryCard data={main} />
+        {metrics.distilbert && metrics.baseline && <WhyThisModel metrics={metrics} />}
       </section>
 
       {metrics.distilbert?.by_source?.huffpost && <GlowUp metrics={metrics} />}
@@ -69,22 +63,22 @@ export default function Performance() {
         <SectionTitle
           emoji="🎯"
           title="Score by category"
-          note="F1 combines precision (when it says “sport”, is it right?) and recall (did it find all the sport stories?). Hover a score to see both."
+          note="Precision: when it says “sport”, how often is it right? Recall: of all the real sport stories, how many did it find? F1 combines the two."
         />
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
             <thead>
-              <tr className="border-b-2 border-ink text-left">
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-widest text-ink/60">Category</th>
-                {models.map((id) => (
-                  <th key={id} className="px-4 py-3 text-right font-display font-extrabold">{SHORT[id]}</th>
-                ))}
-                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-widest text-ink/60">Articles</th>
+              <tr className="border-b-2 border-ink text-left text-xs font-bold uppercase tracking-widest text-ink/60">
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3 text-right">Precision</th>
+                <th className="px-4 py-3 text-right">Recall</th>
+                <th className="px-4 py-3 text-right text-ink">F1</th>
+                <th className="px-4 py-3 text-right">Articles</th>
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-ink/10">
               {labels.map((label) => {
-                const best = Math.max(...models.map((id) => metrics[id].per_class[label].f1))
+                const row = main.per_class[label]
                 return (
                   <tr key={label} className="hover:bg-paper/60">
                     <td className="px-4 py-3">
@@ -92,19 +86,17 @@ export default function Performance() {
                         {category(label).emoji} {category(label).name}
                       </span>
                     </td>
-                    {models.map((id) => {
-                      const row = metrics[id].per_class[label]
-                      return (
-                        <td
-                          key={id}
-                          title={`Precision ${percent(row.precision)} · Recall ${percent(row.recall)}`}
-                          className="px-4 py-3 text-right font-bold tabular-nums"
-                        >
-                          <span className={row.f1 === best ? 'rounded bg-sun px-1.5 py-0.5' : ''}>{percent(row.f1)}</span>
-                        </td>
-                      )
-                    })}
-                    <td className="px-4 py-3 text-right tabular-nums text-ink/60">{metrics[models[0]].per_class[label].support}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ink/70">{percent(row.precision)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ink/70">{percent(row.recall)}</td>
+                    <td className="px-4 py-3 text-right font-bold tabular-nums">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="hidden h-2 w-16 overflow-hidden rounded-full border border-ink bg-paper sm:inline-block">
+                          <span className="block h-full bg-ink" style={{ width: `${row.f1 * 100}%` }} />
+                        </span>
+                        {percent(row.f1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ink/60">{row.support}</td>
                   </tr>
                 )
               })}
@@ -117,14 +109,47 @@ export default function Performance() {
         <SectionTitle
           emoji="🧩"
           title="Where does it get confused?"
-          note="Rows are the real category, columns are what the model guessed. The diagonal is correct; pink squares are mistakes."
+          note="Rows are the real category, columns are what the AI guessed. The dark diagonal is correct; pink squares are mistakes. Business ↔ tech is the trickiest pair."
         />
-        <div className="grid gap-5 lg:grid-cols-3">
-          {models.map((id) => <ConfusionMatrix key={id} title={SHORT[id]} data={metrics[id]} />)}
+        <div className="max-w-xl">
+          <ConfusionMatrix title="DistilBERT + TF-IDF" data={main} />
         </div>
       </section>
 
       {metrics.distilbert?.training && <TrainingChart training={metrics.distilbert.training} />}
+    </div>
+  )
+}
+
+// One-line proof that the model the site uses is the best of the three we tried.
+function WhyThisModel({ metrics }) {
+  const rows = [
+    { id: 'combined', label: 'DistilBERT + TF-IDF', note: 'used by this site' },
+    { id: 'distilbert', label: 'DistilBERT alone', note: 'neural network only' },
+    { id: 'baseline', label: 'TF-IDF alone', note: 'word counting only' },
+  ].filter((row) => metrics[row.id])
+  return (
+    <div className="card p-6">
+      <p className="text-xs font-bold uppercase tracking-widest text-ink/60">🥇 Why this model?</p>
+      <h3 className="mt-1 font-display text-xl leading-tight font-extrabold">We tried three and kept the best.</h3>
+      <div className="mt-5 space-y-3">
+        {rows.map(({ id, label, note }, i) => (
+          <div key={id}>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className={i === 0 ? 'font-bold' : 'text-ink/70'}>
+                {label} <span className="text-xs text-ink/40">· {note}</span>
+              </span>
+              <span className="font-bold tabular-nums">{percent(metrics[id].accuracy)}</span>
+            </div>
+            <div className="mt-1 h-3 overflow-hidden rounded-full border-2 border-ink bg-paper">
+              <div className={`animate-grow h-full ${i === 0 ? 'bg-sun' : 'bg-ink/25'}`} style={{ width: `${metrics[id].accuracy * 100}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-xs text-ink/60 text-pretty">
+        Averaging the two gives the best accuracy and more honest confidence on stories that mix topics.
+      </p>
     </div>
   )
 }
@@ -140,24 +165,20 @@ function SectionTitle({ emoji, title, note }) {
   )
 }
 
-function SummaryCard({ id, data, rank }) {
+function SummaryCard({ data }) {
   const correct = data.confusion_matrix.reduce((sum, row, i) => sum + row[i], 0)
-  const look = LOOK[id]
   return (
-    <div className={`card relative p-5 ${look.bg}`} style={{ transform: `rotate(${[-1, 0.6, -0.4][rank] ?? 0}deg)` }}>
-      {rank === 0 && (
-        <span className="absolute -right-3 -top-4 rotate-12 rounded-full border-2 border-ink bg-red-500 px-3 py-1 text-xs font-extrabold uppercase text-white shadow-[2px_2px_0_0_var(--color-ink)]">
-          Best
-        </span>
-      )}
-      <p className="text-xs font-bold uppercase tracking-widest text-ink/60">{look.kind}</p>
-      <h3 className="mt-1 font-display text-lg leading-tight font-extrabold">{data.title}</h3>
-      <div className="mt-4 font-display text-6xl leading-none font-extrabold tabular-nums">{percent(data.accuracy)}</div>
-      <p className="mt-1 text-sm font-semibold text-ink/60">
-        accuracy · {correct.toLocaleString()} / {data.test_size.toLocaleString()} right
+    <div className="card relative -rotate-[0.6deg] bg-sun p-6">
+      <span className="absolute -right-3 -top-4 rotate-12 rounded-full border-2 border-ink bg-red-500 px-3 py-1 text-xs font-extrabold uppercase text-white shadow-[2px_2px_0_0_var(--color-ink)]">
+        Final grade
+      </span>
+      <p className="text-xs font-bold uppercase tracking-widest text-ink/60">🧠 The AI · DistilBERT + TF-IDF</p>
+      <div className="mt-3 font-display text-7xl leading-none font-extrabold tabular-nums sm:text-8xl">{percent(data.accuracy)}</div>
+      <p className="mt-2 font-semibold text-ink/70">
+        accuracy · <b className="text-ink">{correct.toLocaleString()}</b> of {data.test_size.toLocaleString()} articles sorted correctly
       </p>
       {data.by_source && Object.keys(data.by_source).length > 0 && (
-        <dl className="mt-5 space-y-2.5 border-t-2 border-ink/15 pt-4 text-sm">
+        <dl className="mt-6 grid gap-4 border-t-2 border-ink/15 pt-4 text-sm sm:grid-cols-2">
           {Object.entries(data.by_source).map(([source, result]) => (
             <div key={source}>
               <div className="flex justify-between">

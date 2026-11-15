@@ -15,12 +15,12 @@
 ## 3. A real article from today (40 s)
 
 1. Open any story on bbc.co.uk/news (or another news site), copy the headline and text, paste it in, click **✨ Classify it!**. While it runs, point at the loading steps: they show what the AI does (tokens → DistilBERT → TF-IDF → average).
-2. Switch **Pick a brain** between **Combined**, **DistilBERT** and **TF-IDF**: the result re-runs instantly so the models can be compared.
+2. Explain that the site uses one model: DistilBERT and TF-IDF combined, because it scored best of the three you tried.
 3. Paste a story that mixes topics, e.g. a government investment programme. Combined shows **Business 67%** with **Also related: Politics 31%**. Explain that version 1 of DistilBERT said business 99.5% because it only ever saw single-topic articles, and that averaging it with TF-IDF and adding modern training data fixed that.
 
 ## 4. How good is it? (40 s) — *Performance page*
 
-1. Read the three accuracy cards: all models were tested on 1,211 articles never seen in training. Point at the two dataset scores: everything gets ~99% on old BBC news, but on modern HuffPost headlines the neural network beats TF-IDF by 6 points.
+1. Read the big grade card (89.8% on 1,211 articles never seen in training) and the "Why this model?" card next to it, which shows the three models you tried. Point at the two dataset scores: everything gets ~99% on old BBC news, but on modern HuffPost headlines the neural network beats TF-IDF by 6 points.
 2. Tell the version 1 story: trained only on 2004 BBC news, the model scored just 68% on modern news; adding 10,000 HuffPost items raised that to 88%.
 3. Show the confusion matrix: "the diagonal is correct, anything red is a mistake."
 4. Show **How DistilBERT learned**: the loss falls each epoch while validation accuracy rises.
