@@ -10,3 +10,4 @@ frontend/dist/
 .claude/
 reports/*.log
 /models_v1/
+deploy/hf-space/build/
