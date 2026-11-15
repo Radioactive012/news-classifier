@@ -11,7 +11,8 @@ const MODEL = 'combined'
 
 function loadHistory() {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY)) ?? []
+    const saved = JSON.parse(localStorage.getItem(HISTORY_KEY))
+    return Array.isArray(saved) ? saved : []
   } catch {
     return []
   }

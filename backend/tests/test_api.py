@@ -107,3 +107,13 @@ def test_metrics(client):
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "baseline" in response.json()
+
+
+def test_rejects_article_over_the_character_limit(client):
+    response = client.post("/predict", json={"text": "word " * 12_000})  # 60,000 characters
+    assert response.status_code == 413
+
+
+def test_rejects_huge_upload_before_reading_it(client):
+    response = client.post("/predict", content=b"x" * 300_000, headers={"content-type": "application/json"})
+    assert response.status_code == 413

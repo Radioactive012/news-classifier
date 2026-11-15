@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -15,12 +16,16 @@ SEED = 42
 # text looks like the articles a user will paste into the app.
 DATASET_URL = "http://mlg.ucd.ie/files/datasets/bbc-fulltext.zip"
 ZIP_PATH = DATA_DIR / "bbc-fulltext.zip"
+# The publisher only offers plain HTTP, so the file is checked against its
+# known SHA-256 fingerprint before use.
+ZIP_SHA256 = "a351031a62325b3d7ff13146eeb035c22feca8290913b5183d1ff3be35109495"
 
 # HuffPost News Category Dataset (Misra, 2022; CC BY 4.0): headlines and short
 # descriptions from 2012-2022. Adds modern, American news to the 2004-05 BBC
 # articles, so the model knows newer topics (smartphones, social media, Trump).
 HUFFPOST_URL = "https://huggingface.co/datasets/heegyu/news-category-dataset/resolve/main/data.json"
 HUFFPOST_PATH = DATA_DIR / "huffpost" / "data.json"
+HUFFPOST_SHA256 = "2cfc51fa4a82a96ecbe251fa383737aa1dea2e0a517f61dece633fcc25a4a065"
 HUFFPOST_LABELS = {
     "BUSINESS": "business",
     "MONEY": "business",
@@ -32,17 +37,19 @@ HUFFPOST_LABELS = {
 HUFFPOST_PER_CATEGORY = 2000  # tech only has about 2,000, so every category gets the same
 
 
-def download(url: str, path: Path) -> None:
-    if path.exists():
-        return
-    with urlopen(url, timeout=60) as response:
-        contents = response.read()
-    path.write_bytes(contents)
+def download(url: str, path: Path, sha256: str) -> None:
+    """Download once, and refuse a file whose fingerprint does not match."""
+    if not path.exists():
+        with urlopen(url, timeout=120) as response:
+            path.write_bytes(response.read())
+    if hashlib.sha256(path.read_bytes()).hexdigest() != sha256:
+        path.unlink()
+        raise SystemExit(f"{path.name} does not match its expected SHA-256 and was deleted. Try again.")
 
 
 def load_articles() -> pd.DataFrame:
     """Read every bbc/<label>/<id>.txt file in the zip into one table."""
-    download(DATASET_URL, ZIP_PATH)
+    download(DATASET_URL, ZIP_PATH, ZIP_SHA256)
     rows = []
     with ZipFile(ZIP_PATH) as archive:
         # Sorted so the row order (and therefore the split) is always the same.
@@ -58,7 +65,7 @@ def load_articles() -> pd.DataFrame:
 
 def load_huffpost() -> pd.DataFrame:
     HUFFPOST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    download(HUFFPOST_URL, HUFFPOST_PATH)
+    download(HUFFPOST_URL, HUFFPOST_PATH, HUFFPOST_SHA256)
     rows = pd.read_json(HUFFPOST_PATH, lines=True)
     rows = rows[rows["category"].isin(HUFFPOST_LABELS)]
     rows = rows.drop_duplicates(subset="headline")

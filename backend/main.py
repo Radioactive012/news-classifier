@@ -6,12 +6,13 @@ Interactive API docs:       http://localhost:8000/docs
 
 import json
 import os
+import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -21,6 +22,12 @@ REPORT_DIR = ROOT / "reports"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 MIN_WORDS = 20
 MAX_CHARS = 50_000
+# Reject request bodies bigger than this before reading them, so nobody can
+# fill the 512 MB server's memory with a huge upload (50,000 characters of
+# text is well under 200 KB even with the JSON around it).
+MAX_BODY_BYTES = 200_000
+# Run at most two predictions at once; extra requests wait their turn.
+PREDICT_SLOTS = threading.BoundedSemaphore(2)
 
 classifier: Classifier | None = None
 
@@ -45,8 +52,19 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    if request.method == "POST":
+        length = request.headers.get("content-length")
+        if length is None or not length.isdigit():
+            return JSONResponse({"detail": "Content-Length header required."}, status_code=411)
+        if int(length) > MAX_BODY_BYTES:
+            return JSONResponse({"detail": "The article is too long. Paste at most about 50,000 characters."}, status_code=413)
+    return await call_next(request)
+
+
 class PredictRequest(BaseModel):
-    text: str = Field(..., max_length=MAX_CHARS, description="The full news article")
+    text: str = Field(..., description="The full news article")
     model: Literal["combined", "distilbert", "baseline"] = "combined"
 
 
@@ -72,15 +90,21 @@ def health():
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest):
     text = request.text.strip()
+    if len(text) > MAX_CHARS:
+        raise HTTPException(413, f"The article is too long. Paste at most {MAX_CHARS:,} characters.")
     if not text:
         raise HTTPException(422, "Please paste a news article first.")
     words = len(text.split())
     if words < MIN_WORDS:
         raise HTTPException(422, f"The text is too short ({words} words). Paste at least {MIN_WORDS} words of an article.")
+    if not PREDICT_SLOTS.acquire(timeout=30):
+        raise HTTPException(503, "The AI is busy. Please try again in a moment.")
     try:
         return classifier.predict(text, request.model)
     except ModelNotAvailable as error:
         raise HTTPException(503, str(error))
+    finally:
+        PREDICT_SLOTS.release()
 
 
 @app.get("/metrics")

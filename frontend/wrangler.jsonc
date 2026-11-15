@@ -1,11 +1,17 @@
-// Cloudflare Workers static-assets hosting for the built frontend (free).
-// Deploy:  VITE_API_URL=<backend url> npm run build && npx wrangler deploy
+// Cloudflare Workers hosting for the website (free).
+// worker.js passes /api/* on to the AI server on Render; everything else is
+// the built React app in ./dist.
+// Deploy:  npm run build && npx wrangler deploy
 {
   "name": "news-classifier",
   "compatibility_date": "2026-11-13",
+  "main": "worker.js",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     // Send unknown paths (e.g. /performance on refresh) to index.html for React Router.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Let worker.js see /api/* requests before the static files do.
+    "run_worker_first": ["/api/*"]
   }
 }

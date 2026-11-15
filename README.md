@@ -106,7 +106,7 @@ The live site has two parts:
 
 | Part | Host | Cost |
 |---|---|---|
-| Website (`frontend/`) | Cloudflare Workers static assets | Free |
+| Website (`frontend/`) | Cloudflare Worker: static files + `/api` pass-through to Render | Free |
 | AI API (`backend/`) | Render web service, free plan, Singapore | Free (sleeps when idle) |
 | Model files | Public Hugging Face repo [`Radioactive012/news-classifier-models`](https://huggingface.co/Radioactive012/news-classifier-models) | Free |
 
@@ -126,11 +126,11 @@ Then trigger a new deploy on Render (it downloads the models during the build wi
 
 ```sh
 cd frontend
-VITE_API_URL=https://news-classifier-api-j5qn.onrender.com npm run build
+npm run build          # .env.production points the app at /api
 npx wrangler deploy
 ```
 
-The API only accepts browser requests from the website's address, set by the `ALLOWED_ORIGINS` environment variable on Render.
+The website is a small Cloudflare Worker (`frontend/worker.js`). It serves the built React app and passes every `/api/...` request on to the Render server, so the browser only ever talks to one address. This avoids cross-site requests, which some browsers (such as Brave with Shields up) block.
 
 ## API
 

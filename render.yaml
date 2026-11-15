@@ -10,7 +10,6 @@ services:
     buildCommand: pip install -r requirements-server.txt && python scripts/download_models.py
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    # Live at https://news-classifier-api-j5qn.onrender.com (service srv-dbss2fek1f9s73a4t70g)
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
