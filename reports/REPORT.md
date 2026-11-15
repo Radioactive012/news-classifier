@@ -49,12 +49,21 @@ DistilBERT (`distilbert-base-uncased`) is a 6-layer Transformer neural network w
 
 A first configuration (256 tokens, 3 epochs, learning rate 2e-5) reached 96.2% validation accuracy. Letting the network read up to 512 tokens raised it to 97.6%, so that version was kept. The choice was made on validation accuracy alone, before the test set was used.
 
+### 4.3 Combined model (used by the app)
+
+Testing showed that DistilBERT is **overconfident**. Every training article had exactly one label, so the network learned to put almost all its probability on one category. For example, an article about the Indian government's renewable-energy investment programme got business 99.5% and politics 0.1%. That is the right main answer, but the article clearly has a political side. The baseline was more balanced on the same article (business 68%, politics 19%).
+
+Standard temperature scaling, fitted on the validation set, barely changed this (the best temperature was 1.2). The validation articles are single-topic too, so they give it nothing to correct.
+
+The simple fix is to **average the two models' probabilities**. On the validation and test sets this kept DistilBERT's accuracy unchanged. On the energy article it gives business 83.6% and politics 9.6%. The app uses this combined model by default and lists any other category scoring 8% or more as **"Also related"**.
+
 ## 5. Results
 
 On the 211 test articles:
 
 | Model | Accuracy | Macro F1 | Correct |
 |---|---|---|---|
+| **Combined** (used by the app) | 98.6% | 98.7% | 208 / 211 |
 | DistilBERT (fine-tuned) | 98.6% | 98.7% | 208 / 211 |
 | TF-IDF + Logistic Regression | 99.1% | 99.0% | 209 / 211 |
 
@@ -82,6 +91,7 @@ The first two are about economic policy made by government figures, so they genu
 
 | Model | Correct |
 |---|---|
+| Combined | 15 / 20 |
 | DistilBERT | 15 / 20 |
 | Baseline | 14 / 20 |
 
@@ -110,7 +120,7 @@ The cost is size and speed. The DistilBERT model is 256 MB and takes about 35 ms
 ## 8. Future work
 
 - Train on a larger, modern dataset with more categories, such as AG News or recent articles from several outlets.
-- Allow more than one label per article, using a sigmoid output instead of softmax.
+- Allow more than one label per article, using a sigmoid output instead of softmax and a dataset tagged with several topics per article. This is the proper fix for the overconfidence described in 4.3.
 - Read long articles in several 512-token chunks and average the predictions.
 - Show which words DistilBERT itself relied on, with attention maps or integrated gradients.
 - Deploy the backend so the app can be used online.
@@ -123,7 +133,7 @@ The cost is size and speed. The DistilBERT model is 256 MB and takes about 35 ms
   - `GET /metrics` for the test results,
   - `GET /health` for server status.
 - **Frontend:** React, Vite, Tailwind CSS and Recharts, with three pages:
-  - **Classify:** text input, sample articles, model switch, confidence bars, key words and history.
+  - **Classify:** text input, sample articles, model switch (Combined, DistilBERT or TF-IDF), confidence bars, "also related" topics, key words and history.
   - **Model performance:** accuracy cards, per-category table, confusion matrices and training curve.
   - **About.**
-- **Tests:** 12 automated API tests (pytest) and a live-news check script.
+- **Tests:** 15 automated API tests (pytest) and a live-news check script.

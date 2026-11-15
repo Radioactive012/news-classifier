@@ -1,4 +1,4 @@
-"""Evaluate the fine-tuned DistilBERT model on the held-out test split.
+"""Evaluate DistilBERT, and DistilBERT + TF-IDF combined, on the held-out test split.
 
 The test split was never used for training or for choosing the best epoch,
 so this is a fair estimate of accuracy on unseen articles.
@@ -6,6 +6,8 @@ so this is a fair estimate of accuracy on unseen articles.
 
 import json
 
+import joblib
+import numpy as np
 import pandas as pd
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -15,7 +17,7 @@ from train_bert import BATCH_SIZE, MAX_LENGTH, OUTPUT_DIR, pick_device
 
 
 @torch.no_grad()
-def predict(texts: list[str], tokenizer, model, device) -> list[str]:
+def predict_proba(texts: list[str], tokenizer, model, device) -> np.ndarray:
     model.eval()
     predictions = []
     for start in range(0, len(texts), BATCH_SIZE * 2):
@@ -26,9 +28,8 @@ def predict(texts: list[str], tokenizer, model, device) -> list[str]:
             padding=True,
             return_tensors="pt",
         ).to(device)
-        ids = model(**batch).logits.argmax(dim=-1).tolist()
-        predictions.extend(model.config.id2label[i] for i in ids)
-    return predictions
+        predictions.append(torch.softmax(model(**batch).logits, dim=-1).cpu().numpy())
+    return np.concatenate(predictions)
 
 
 def main() -> None:
@@ -43,11 +44,21 @@ def main() -> None:
         raise ValueError("Model labels do not match data/labels.json")
 
     test = pd.read_csv(DATA_DIR / "test.csv")
-    predictions = predict(test["text"].tolist(), tokenizer, model, device)
+    bert = predict_proba(test["text"].tolist(), tokenizer, model, device)
     print(f"Test articles: {len(test)}")
 
     training = json.loads((OUTPUT_DIR / "training_history.json").read_text(encoding="utf-8"))
-    save_results("distilbert", "DistilBERT (fine-tuned)", test["label"], predictions, labels, {"training": training})
+    print("\n== DistilBERT ==")
+    save_results("distilbert", "DistilBERT (fine-tuned)", test["label"],
+                 [labels[i] for i in bert.argmax(axis=1)], labels, {"training": training})
+
+    # Combined model: the average of DistilBERT's and the baseline's
+    # probabilities. This is what the web app uses by default.
+    baseline = joblib.load(MODEL_DIR / "baseline.joblib")
+    combined = (bert + baseline.predict_proba(test["text"])) / 2
+    print("\n== Combined (DistilBERT + TF-IDF) ==")
+    save_results("combined", "DistilBERT + TF-IDF (combined)", test["label"],
+                 [labels[i] for i in combined.argmax(axis=1)], labels)
 
 
 if __name__ == "__main__":

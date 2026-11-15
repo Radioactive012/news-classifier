@@ -18,6 +18,24 @@ BUSINESS_ARTICLE = (
     "and the chief executive said the company would cut costs to protect its dividend."
 )
 
+# Business news with a strong government angle.
+MIXED_ARTICLE = (
+    "NEW DELHI, November 15, 2026 — The Indian government has announced a major investment "
+    "initiative aimed at expanding the country's renewable energy capacity, with a particular focus "
+    "on solar and wind power. The initiative is expected to attract billions of dollars in private "
+    "investment over the next five years. Officials say the programme will support the development "
+    "of large-scale solar parks, offshore wind farms, and improved energy storage infrastructure. "
+    "The government believes the investment will help reduce India's dependence on imported fossil "
+    "fuels while creating thousands of jobs in engineering, manufacturing, and infrastructure "
+    "development. However, some industry experts have raised concerns about the challenges of "
+    "implementing the programme. These include land acquisition, inconsistent power distribution "
+    "infrastructure, and the high initial costs associated with renewable energy projects. "
+    "Environmental organizations have welcomed the announcement, arguing that accelerating the "
+    "transition to clean energy is essential for reducing carbon emissions and addressing climate "
+    "change. The government is expected to release further details about funding allocations and "
+    "implementation timelines in the coming months."
+)
+
 
 @pytest.fixture(scope="module")
 def client():
@@ -36,7 +54,7 @@ def test_health(client):
     assert set(body["labels"]) == {"business", "entertainment", "politics", "sport", "tech"}
 
 
-@pytest.mark.parametrize("model", ["distilbert", "baseline"])
+@pytest.mark.parametrize("model", ["combined", "distilbert", "baseline"])
 @pytest.mark.parametrize("text,expected", [(SPORT_ARTICLE, "sport"), (BUSINESS_ARTICLE, "business")])
 def test_predict(client, models, model, text, expected):
     if model not in models:
@@ -51,10 +69,19 @@ def test_predict(client, models, model, text, expected):
     assert body["word_count"] == len(text.split())
 
 
-def test_default_model_is_distilbert(client, models):
-    if "distilbert" not in models:
-        pytest.skip("distilbert is not trained")
-    assert client.post("/predict", json={"text": SPORT_ARTICLE}).json()["model"] == "distilbert"
+def test_default_model_is_combined(client, models):
+    if "combined" not in models:
+        pytest.skip("models are not trained")
+    assert client.post("/predict", json={"text": SPORT_ARTICLE}).json()["model"] == "combined"
+
+
+def test_mixed_article_shows_related_topic(client, models):
+    if "combined" not in models:
+        pytest.skip("models are not trained")
+    body = client.post("/predict", json={"text": MIXED_ARTICLE}).json()
+    assert body["category"] == "business"
+    assert "politics" in body["related"]
+    assert client.post("/predict", json={"text": SPORT_ARTICLE}).json()["related"] == []
 
 
 def test_long_article_is_truncated_not_rejected(client, models):

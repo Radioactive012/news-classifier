@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { classify } from '../api.js'
-import { MODELS, category, percent } from '../categories.js'
+import { MODELS, MODEL_SHORT, category, percent } from '../categories.js'
 import { SAMPLES } from '../samples.js'
 
 const MIN_WORDS = 20
@@ -27,7 +27,7 @@ const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0)
 
 export default function Classify({ health }) {
   const [text, setText] = useState('')
-  const [model, setModel] = useState('distilbert')
+  const [model, setModel] = useState('combined')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
@@ -38,10 +38,13 @@ export default function Classify({ health }) {
   const words = countWords(text)
   const tooShort = words > 0 && words < MIN_WORDS
 
-  // If the neural model is not trained yet, fall back to the baseline.
+  // If a model is not trained yet, fall back to one that is.
   useEffect(() => {
-    if (health?.models && !health.models.distilbert && health.models.baseline) setModel('baseline')
-  }, [health])
+    if (health?.models && !health.models[model]) {
+      const ready = MODELS.find((option) => health.models[option.id])
+      if (ready) setModel(ready.id)
+    }
+  }, [health, model])
 
   async function run(articleText = text, modelId = model) {
     if (countWords(articleText) < MIN_WORDS || loading) return
@@ -231,6 +234,17 @@ function Result({ result }) {
         </div>
       </div>
 
+      {result.related.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-stone-500">Also related:</span>
+          {result.related.map((label) => (
+            <span key={label} className={`rounded-full px-2.5 py-0.5 font-medium ring-1 ${category(label).soft}`}>
+              {category(label).emoji} {category(label).name} {percent(result.probabilities[label])}
+            </span>
+          ))}
+        </div>
+      )}
+
       {unsure && (
         <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
           The model is not very sure. The article may cover more than one topic.
@@ -272,7 +286,7 @@ function Result({ result }) {
       <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-stone-100 pt-4 text-sm">
         <div>
           <dt className="text-xs text-stone-500">Model</dt>
-          <dd className="font-medium">{result.model === 'distilbert' ? 'DistilBERT' : 'TF-IDF'}</dd>
+          <dd className="font-medium">{MODEL_SHORT[result.model]}</dd>
         </div>
         <div>
           <dt className="text-xs text-stone-500">Words</dt>
@@ -361,7 +375,7 @@ function History({ items, onOpen, onClear }) {
               <button type="button" onClick={() => onOpen(item)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-stone-50 sm:gap-4">
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${meta.soft}`}>{meta.name}</span>
                 <span className="min-w-0 flex-1 truncate text-sm text-stone-700">{item.snippet}</span>
-                <span className="hidden shrink-0 text-xs text-stone-400 sm:inline">{item.model === 'distilbert' ? 'DistilBERT' : 'TF-IDF'}</span>
+                <span className="hidden shrink-0 text-xs text-stone-400 sm:inline">{MODEL_SHORT[item.model]}</span>
                 <span className="shrink-0 text-sm font-medium tabular-nums">{percent(item.confidence, 0)}</span>
               </button>
             </li>

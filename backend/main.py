@@ -47,13 +47,14 @@ app.add_middleware(
 
 class PredictRequest(BaseModel):
     text: str = Field(..., max_length=MAX_CHARS, description="The full news article")
-    model: Literal["distilbert", "baseline"] = "distilbert"
+    model: Literal["combined", "distilbert", "baseline"] = "combined"
 
 
 class PredictResponse(BaseModel):
     category: str
     confidence: float
     probabilities: dict[str, float]
+    related: list[str]
     model: str
     model_name: str
     key_terms: list[str]

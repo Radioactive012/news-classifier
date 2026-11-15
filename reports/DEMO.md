@@ -15,12 +15,12 @@
 ## 3. A real article from today (40 s)
 
 1. Open any story on bbc.co.uk/news (or another news site), copy the headline and text, paste it in, click **Classify article**.
-2. Switch the model toggle to **TF-IDF + LogReg**: the result re-runs instantly so both models can be compared.
-3. Optional: paste a story that mixes topics (for example a footballer's tax case). The confidence drops and the app warns the model is unsure — a good moment to talk about limitations.
+2. Switch the model toggle between **Combined**, **DistilBERT** and **TF-IDF + LogReg**: the result re-runs instantly so the models can be compared.
+3. Paste a story that mixes topics, e.g. a government investment programme. Combined shows **Business** with **Also related: Politics**. Switch to DistilBERT alone and it says business 99.5%: explain that the network is overconfident because it only ever saw single-topic articles, and combining it with TF-IDF fixes that.
 
 ## 4. How good is it? (40 s) — *Model performance page*
 
-1. Read the two accuracy cards: both models were tested on 211 articles never seen in training.
+1. Read the three accuracy cards: all models were tested on 211 articles never seen in training.
 2. Show the confusion matrix: "the diagonal is correct, anything red is a mistake."
 3. Show **How DistilBERT learned**: the loss falls each epoch while validation accuracy rises.
 

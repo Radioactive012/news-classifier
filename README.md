@@ -2,7 +2,7 @@
 
 **Problem statement:** automatically classify news articles into categories such as sports, politics, business and technology.
 
-Paste a news article into the web app and a fine-tuned **DistilBERT** neural network predicts its category (business, entertainment, politics, sport or tech) with a confidence score for every category. A classical **TF-IDF + Logistic Regression** model is trained as a baseline, and the app compares the two.
+Paste a news article into the web app and a fine-tuned **DistilBERT** neural network predicts its category (business, entertainment, politics, sport or tech) with a confidence score for every category. A classical **TF-IDF + Logistic Regression** model is trained as a baseline. By default the app **combines** the two (averages their probabilities), which gives the same accuracy but more honest confidence scores, and shows an "Also related" topic when an article covers two subjects.
 
 ![Classify page](docs/screenshots/classify.jpg)
 
@@ -14,6 +14,7 @@ Both models are evaluated on the same 211 held-out test articles that were never
 
 | Model | Test accuracy | Macro F1 | Correct |
 |---|---|---|---|
+| **Combined** (used by the app) | 98.6% | 98.7% | 208 / 211 |
 | DistilBERT (fine-tuned neural network) | 98.6% | 98.7% | 208 / 211 |
 | TF-IDF + Logistic Regression (baseline) | 99.1% | 99.0% | 209 / 211 |
 
@@ -98,7 +99,7 @@ Interactive docs at http://localhost:8000/docs.
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/predict` | Body `{"text": "...", "model": "distilbert" \| "baseline"}`. Returns the category, confidence, probabilities for every category, key words and timing. Text under 20 words is rejected with a 422. |
+| `POST` | `/predict` | Body `{"text": "...", "model": "combined" \| "distilbert" \| "baseline"}` (default `combined`). Returns the category, confidence, probabilities for every category, any "also related" categories (8% or more), key words and timing. Text under 20 words is rejected with a 422. |
 | `GET` | `/metrics` | Test-set results for both models (`reports/metrics.json`). |
 | `GET` | `/health` | Server status and which models are loaded. |
 

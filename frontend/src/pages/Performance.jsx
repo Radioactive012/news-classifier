@@ -3,8 +3,9 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { getMetrics } from '../api.js'
 import { category, percent } from '../categories.js'
 
-const ORDER = ['distilbert', 'baseline']
-const SHORT = { distilbert: 'DistilBERT', baseline: 'TF-IDF + LogReg' }
+const ORDER = ['combined', 'distilbert', 'baseline']
+const SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF + LogReg' }
+const KIND = { combined: 'Used by the app', distilbert: 'Neural network', baseline: 'Classical baseline' }
 
 export default function Performance() {
   const [metrics, setMetrics] = useState(null)
@@ -43,31 +44,27 @@ export default function Performance() {
       <section className="max-w-2xl">
         <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">Model performance</h1>
         <p className="mt-3 text-stone-600 text-pretty">
-          Both models were tested on {metrics[models[0]].test_size} BBC articles they never saw during training.
-          The DistilBERT neural network is compared with a classical TF-IDF + Logistic Regression baseline.
+          All models were tested on {metrics[models[0]].test_size} BBC articles they never saw during training.
+          The DistilBERT neural network is compared with a classical TF-IDF + Logistic Regression baseline, and with the
+          two combined (their probabilities averaged), which is what the app uses by default.
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-3">
         {models.map((id) => <SummaryCard key={id} id={id} data={metrics[id]} />)}
       </section>
 
       <section>
-        <SectionTitle title="Results by category" note="Precision: when the model says “sport”, how often it is right. Recall: of the real sport articles, how many it found. F1 combines the two." />
+        <SectionTitle title="F1 score by category" note="F1 combines precision (when the model says “sport”, how often it is right) and recall (of the real sport articles, how many it found). 100% is perfect. Hover a score to see precision and recall." />
         <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-stone-200 text-left text-xs uppercase tracking-wider text-stone-500">
-                <th rowSpan={2} className="px-4 py-3 font-semibold">Category</th>
+                <th className="px-4 py-3 font-semibold">Category</th>
                 {models.map((id) => (
-                  <th key={id} colSpan={3} className="border-l border-stone-100 px-4 pt-3 pb-1 text-center font-semibold text-stone-700">{SHORT[id]}</th>
+                  <th key={id} className="px-4 py-3 text-right font-semibold text-stone-700">{SHORT[id]}</th>
                 ))}
-                <th rowSpan={2} className="border-l border-stone-100 px-4 py-3 text-right font-semibold">Articles</th>
-              </tr>
-              <tr className="border-b border-stone-200 text-xs text-stone-500">
-                {models.map((id) => ['Precision', 'Recall', 'F1'].map((name, i) => (
-                  <th key={id + name} className={`px-3 pb-2 text-right font-medium ${i === 0 ? 'border-l border-stone-100' : ''}`}>{name}</th>
-                )))}
+                <th className="px-4 py-3 text-right font-semibold">Articles</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -81,13 +78,13 @@ export default function Performance() {
                   </td>
                   {models.map((id) => {
                     const row = metrics[id].per_class[label]
-                    return ['precision', 'recall', 'f1'].map((key, i) => (
-                      <td key={id + key} className={`px-3 py-3 text-right tabular-nums ${i === 0 ? 'border-l border-stone-100' : ''} ${key === 'f1' ? 'font-semibold' : 'text-stone-600'}`}>
-                        {percent(row[key])}
+                    return (
+                      <td key={id} title={`Precision ${percent(row.precision)} · Recall ${percent(row.recall)}`} className="px-4 py-3 text-right font-semibold tabular-nums">
+                        {percent(row.f1)}
                       </td>
-                    ))
+                    )
                   })}
-                  <td className="border-l border-stone-100 px-4 py-3 text-right tabular-nums text-stone-600">{metrics[models[0]].per_class[label].support}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-stone-600">{metrics[models[0]].per_class[label].support}</td>
                 </tr>
               ))}
             </tbody>
@@ -118,13 +115,13 @@ function SectionTitle({ title, note }) {
 
 function SummaryCard({ id, data }) {
   const correct = data.confusion_matrix.reduce((sum, row, i) => sum + row[i], 0)
-  const neural = id === 'distilbert'
+  const neural = id === 'combined'
   return (
     <div className={`rounded-2xl p-6 shadow-sm ${neural ? 'bg-stone-900 text-white' : 'border border-stone-200 bg-white'}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className={`text-xs font-semibold uppercase tracking-wider ${neural ? 'text-stone-400' : 'text-stone-500'}`}>
-            {neural ? 'Neural network' : 'Classical baseline'}
+            {KIND[id]}
           </p>
           <h3 className="mt-1 text-lg font-semibold">{data.title}</h3>
         </div>

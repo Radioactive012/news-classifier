@@ -14,9 +14,14 @@ BASELINE_PATH = MODEL_DIR / "baseline.joblib"
 DISTILBERT_DIR = MODEL_DIR / "distilbert"
 
 MODEL_NAMES = {
+    "combined": "DistilBERT + TF-IDF (combined)",
     "distilbert": "DistilBERT (fine-tuned)",
     "baseline": "TF-IDF + Logistic Regression",
 }
+
+
+# A second category is shown as "also related" when it gets at least this share.
+RELATED_THRESHOLD = 0.08
 
 
 class ModelNotAvailable(Exception):
@@ -54,24 +59,35 @@ class Classifier:
 
     @property
     def available(self) -> dict[str, bool]:
-        return {"distilbert": self.bert is not None, "baseline": self.baseline is not None}
+        both = self.bert is not None and self.baseline is not None
+        return {"combined": both, "distilbert": self.bert is not None, "baseline": self.baseline is not None}
 
     def predict(self, text: str, model: str) -> dict:
         started = time.perf_counter()
+        if not self.available[model]:
+            raise ModelNotAvailable(f"The {MODEL_NAMES[model]} model is not trained yet. See README.md.")
+        truncated = False
         if model == "distilbert":
-            if self.bert is None:
-                raise ModelNotAvailable("The DistilBERT model is not trained yet. Run training/train_bert.py.")
             probabilities, truncated = self._predict_bert(text)
+        elif model == "baseline":
+            probabilities = self._predict_baseline(text)
         else:
-            if self.baseline is None:
-                raise ModelNotAvailable("The baseline model is not trained yet. Run training/train_baseline.py.")
-            probabilities, truncated = self._predict_baseline(text), False
+            # Combined: average the two models' probabilities. DistilBERT is
+            # very confident (it was trained on single-topic articles), while
+            # TF-IDF spreads its scores more, so the average gives a fairer
+            # picture for articles that touch on two topics.
+            bert, truncated = self._predict_bert(text)
+            tfidf = self._predict_baseline(text)
+            probabilities = {label: (bert[label] + tfidf[label]) / 2 for label in self.labels}
 
         category = max(probabilities, key=probabilities.get)
+        related = [label for label, p in sorted(probabilities.items(), key=lambda kv: -kv[1])
+                   if label != category and p >= RELATED_THRESHOLD]
         return {
             "category": category,
             "confidence": probabilities[category],
             "probabilities": probabilities,
+            "related": related,
             "model": model,
             "model_name": MODEL_NAMES[model],
             "key_terms": self.key_terms(text, category),

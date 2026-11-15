@@ -16,8 +16,11 @@ export function category(label) {
 }
 
 export const MODELS = [
+  { id: 'combined', name: 'Combined', detail: 'Recommended' },
   { id: 'distilbert', name: 'DistilBERT', detail: 'Neural network' },
   { id: 'baseline', name: 'TF-IDF + LogReg', detail: 'Classical baseline' },
 ]
+
+export const MODEL_SHORT = { combined: 'Combined', distilbert: 'DistilBERT', baseline: 'TF-IDF' }
 
 export const percent = (value, digits = 1) => `${(value * 100).toFixed(digits)}%`

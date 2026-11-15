@@ -70,13 +70,13 @@ def main() -> None:
             if len(body.split()) < 80:
                 continue
             text = f"{title}. {body}"
-            result = {m: classifier.predict(text, m) for m in ("distilbert", "baseline") if classifier.available[m]}
+            result = {m: classifier.predict(text, m) for m in ("combined", "distilbert", "baseline") if classifier.available[m]}
             rows.append((label, title, link, result))
             found += 1
             print(f"{label:13} {title[:60]:60} -> " + ", ".join(f"{m}: {r['category']}" for m, r in result.items()))
 
-    models = [m for m in ("distilbert", "baseline") if classifier.available[m]]
-    names = {"distilbert": "DistilBERT", "baseline": "TF-IDF"}
+    models = [m for m in ("combined", "distilbert", "baseline") if classifier.available[m]]
+    names = {"combined": "Combined", "distilbert": "DistilBERT", "baseline": "TF-IDF"}
     lines = [
         "# Manual test on current news",
         "",

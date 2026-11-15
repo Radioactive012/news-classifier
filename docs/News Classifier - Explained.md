@@ -245,6 +245,33 @@ Yes, by **one article**, and you should say this honestly in your viva. It's a s
 
 ---
 
+## 7b. The overconfidence problem, and the "Combined" fix ⭐
+
+> [!example] The article that exposed it
+> An article about the **Indian government's renewable-energy investment programme**. It's mainly **business** (private investment, jobs, costs) with a **political** side (it's a government announcement).
+
+| Model | Business | Politics |
+|---|---|---|
+| DistilBERT alone | 99.5% | 0.1% |
+| TF-IDF baseline | 68% | 19% |
+| **Combined (average of both)** | **83.6%** | **9.6%** |
+
+**Why was DistilBERT so sure?** Every article it trained on had exactly **one** correct label. It never saw a "half business, half politics" article, so it learned to always be close to 100% sure. That's called being **overconfident** or **badly calibrated**.
+
+**What we tried first:** *temperature scaling*, a standard trick that divides the model's raw scores by a number to soften them. We fitted that number on the validation set, but it barely helped (99.5% → 98.6%), because the validation articles are single-topic too.
+
+**What we did:** average the two models' probabilities. This is called an **ensemble**.
+- DistilBERT brings understanding of context.
+- TF-IDF brings softer, more spread-out scores.
+- Accuracy stayed exactly the same (98.6%), but the confidence is now more honest.
+
+On the site, **Combined** is the default model. Any other category scoring **8% or more** is shown as **"Also related"**, so this article shows *Business 83.6% · Also related: Politics 9.6%*.
+
+> [!tip] Viva gold
+> "The neural network was overconfident on mixed-topic articles because it was trained on single-label data. Calibration didn't help, so I used an ensemble with the baseline. Accuracy was unchanged, the confidence became more realistic, and the app can now show a secondary topic." This shows you tested the model critically, not just trained it.
+
+---
+
 ## 8. The backend (FastAPI)
 
 File: `backend/main.py` and `backend/classifier.py`.
@@ -256,7 +283,7 @@ A **backend** is a program that runs on a computer (server) and answers requests
 
 | Endpoint | What it does |
 |---|---|
-| `POST /predict` | Send `{"text": "...", "model": "distilbert"}` and get back the category, confidence, all 5 probabilities, key words and time taken |
+| `POST /predict` | Send `{"text": "...", "model": "combined"}` and get back the category, confidence, all 5 probabilities, "also related" topics, key words and time taken. `model` can also be `distilbert` or `baseline` |
 | `GET /metrics` | Returns the test results (from `reports/metrics.json`) for the performance page |
 | `GET /health` | "Are you alive, and which models are loaded?" Powers the green "Models ready" dot |
 
@@ -280,7 +307,8 @@ Folder: `frontend/`. Built with:
 1. **Classify (home)**
    - Text box with a word counter.
    - "Try a sample" buttons: 5 articles written for this project, so they're not in the training data.
-   - Model switch (DistilBERT ↔ TF-IDF), which re-runs instantly so you can compare.
+   - Model switch (Combined, the default ↔ DistilBERT ↔ TF-IDF), which re-runs instantly so you can compare.
+   - "Also related" chips when an article covers a second topic.
    - Result card: coloured badge, confidence %, bars for all 5 categories, key words, time taken.
    - A warning if confidence is under 60% ("may cover more than one topic").
    - Recent predictions history, saved in your browser.
@@ -323,7 +351,7 @@ news-classifier/
 ├── backend/           ← the server
 │   ├── main.py            the API endpoints
 │   ├── classifier.py      loads models, makes predictions
-│   └── tests/             12 automated tests
+│   └── tests/             15 automated tests
 ├── frontend/          ← the website
 │   └── src/pages/         Classify, Performance, About
 ├── scripts/
@@ -421,6 +449,9 @@ To run the tests: `pytest`
 > [!question]- What is overfitting?
 > When a model memorises the training data instead of learning general patterns, so it does worse on new data. We watched validation accuracy and kept the best epoch to avoid it.
 
+> [!question]- What is the "Combined" model?
+> An ensemble: the average of DistilBERT's and the TF-IDF model's probabilities. Same accuracy as DistilBERT (98.6%), but less overconfident, so it can show a second related topic for mixed articles.
+
 > [!question]- What is softmax?
 > A function that turns raw scores into probabilities between 0 and 1 that add up to 1.
 
@@ -446,7 +477,7 @@ To run the tests: `pytest`
 > It sends an HTTP POST request with the article as JSON to `/predict`, and the backend replies with JSON containing the category and probabilities.
 
 > [!question]- How do you know it works?
-> 12 automated API tests (pytest), a held-out test set of 211 articles, and a live test on 20 current BBC articles.
+> 15 automated API tests (pytest), a held-out test set of 211 articles, and a live test on 20 current BBC articles.
 
 ---
 
