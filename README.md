@@ -4,13 +4,20 @@
 
 Paste a news article into the web app and a fine-tuned **DistilBERT** neural network predicts its category (business, entertainment, politics, sport or tech) with a confidence score for every category. A classical **TF-IDF + Logistic Regression** model is trained as a baseline, and the app compares the two.
 
-![Classify page](docs/screenshots/classify.png)
+![Classify page](docs/screenshots/classify.jpg)
+
+![Model performance page](docs/screenshots/performance.jpg)
 
 ## Results
 
 Both models are evaluated on the same 211 held-out test articles that were never used for training. See [reports/REPORT.md](reports/REPORT.md) for the full write-up.
 
-<!-- RESULTS_TABLE -->
+| Model | Test accuracy | Macro F1 | Correct |
+|---|---|---|---|
+| DistilBERT (fine-tuned neural network) | 98.6% | 98.7% | 208 / 211 |
+| TF-IDF + Logistic Regression (baseline) | 99.1% | 99.0% | 209 / 211 |
+
+Both models are near-perfect on this dataset; the difference is one article, which is within noise. On 20 live BBC articles from November 2026, DistilBERT got 15 right and the baseline 14 (see [reports/manual_test.md](reports/manual_test.md)); several "misses" are stories the BBC filed under two sections at once.
 
 ## How it works
 

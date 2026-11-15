@@ -202,7 +202,7 @@ function TrainingChart({ training }) {
     <section>
       <SectionTitle
         title="How DistilBERT learned"
-        note={`Fine-tuned from ${training.base_model} for ${training.epochs} epochs (batch size ${training.batch_size}, learning rate ${training.learning_rate}, max ${training.max_length} tokens) on ${training.device.toUpperCase()}. The loss falls as the network learns; the epoch with the best validation accuracy was kept.`}
+        note={`Fine-tuned from ${training.base_model} for ${training.epochs} epochs (batch size ${training.batch_size}, learning rate ${training.learning_rate.toExponential()}, max ${training.max_length} tokens) on ${training.device.toUpperCase()}. The loss falls as the network learns; the epoch with the best validation accuracy was kept.`}
       />
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="h-72">

@@ -86,7 +86,7 @@ class Classifier:
 
         # The network reads at most max_length tokens (the headline and opening
         # paragraphs); anything after that is cut off.
-        full_length = len(self.tokenizer(text)["input_ids"])
+        full_length = len(self.tokenizer(text, verbose=False)["input_ids"])
         tokens = self.tokenizer(text, truncation=True, max_length=self.max_length, return_tensors="pt")
         logits = self.bert(**tokens).logits[0]
         # Softmax turns the network's raw scores into probabilities that add up to 1.

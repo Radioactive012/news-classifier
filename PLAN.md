@@ -108,8 +108,8 @@ All pages: loading, error and empty states; works on mobile; clear message when 
 
 - [x] Phase 1: Data
 - [x] Phase 2: Baseline model
-- [ ] Phase 3: Neural model
-- [ ] Phase 4: Backend API
-- [ ] Phase 5: Frontend
-- [ ] Phase 6: Testing and polish
-- [ ] Phase 7: College deliverables
+- [x] Phase 3: Neural model
+- [x] Phase 4: Backend API
+- [x] Phase 5: Frontend
+- [x] Phase 6: Testing and polish
+- [x] Phase 7: College deliverables

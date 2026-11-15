@@ -4,7 +4,7 @@ import { CATEGORIES } from '../categories.js'
 const STEPS = [
   {
     title: 'Tokenise the article',
-    body: 'The text is split into word pieces (“tokens”) from a 30,000-piece vocabulary, so even unknown words like “smartwatch” become “smart” + “##watch”. The first 256 tokens are kept.',
+    body: 'The text is split into word pieces (“tokens”) from a 30,000-piece vocabulary, so even unknown words like “smartwatch” become “smart” + “##watch”. The first 512 tokens (about 380 words) are kept.',
   },
   {
     title: 'Read it with DistilBERT',
@@ -74,7 +74,7 @@ export default function About() {
             <li>The training news is from 2004–05 and British, so very recent topics (new apps, new politicians) may be misread.</li>
             <li>Each article gets exactly one label, even when it covers two topics, such as a footballer’s tax case.</li>
             <li>Only five categories exist: a science or health story will be forced into the closest one.</li>
-            <li>DistilBERT reads only the first 256 tokens of very long articles.</li>
+            <li>DistilBERT reads only the first 512 tokens (about 380 words) of very long articles.</li>
           </ul>
         </Card>
         <Card title="Built with">
