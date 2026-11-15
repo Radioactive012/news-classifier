@@ -388,7 +388,7 @@ news-classifier/
 ├── models/ (not on GitHub) trained model files
 ├── start.sh           one command to run everything
 ├── README.md          setup instructions
-└── DEPLOY_CODEX_PROMPT.md  how to put it online
+├── render.yaml        how the AI server runs on Render
 ```
 
 > [!info] Why aren't `data/` and `models/` on GitHub?
@@ -417,6 +417,27 @@ python training/evaluate.py
 To run the tests: `pytest`
 
 ---
+
+### The online version
+
+Live at **https://news-classifier.assetdesk-archive-20261016.workers.dev**.
+
+```mermaid
+flowchart LR
+    A[Visitor's browser] --> B[Website<br/>Cloudflare, free]
+    B -- POST /predict --> C[AI API<br/>Render free plan]
+    D[Model files<br/>Hugging Face] -. downloaded at build .-> C
+```
+
+> [!info] Why the online AI is "compressed"
+> Render's free server has only **512 MB** of memory, but the normal PyTorch version needs about **800 MB**. So for the online server we:
+> 1. **Exported** DistilBERT to **ONNX**, a standard file format that a much lighter engine (ONNX Runtime) can run without PyTorch.
+> 2. **Quantised** it to **int8**: each of the 66 million weights is stored in 1 byte instead of 4, so the model shrinks from 256 MB to 67 MB.
+>
+> Result: about **400 MB** of memory, and accuracy only drops from 89.8% to 89.7% (2 articles out of 1,211). Good viva point: it shows you know the trade-off between model size and accuracy.
+
+> [!warning] The 1-minute wait
+> The free server **sleeps after 15 minutes** without visitors. The first visit after that takes about a minute while it wakes up. **Open the site 2–3 minutes before your demo.** Or run it locally with `./start.sh` as a backup.
 
 ## 13. Tools & tech, and why each was chosen
 
@@ -448,7 +469,7 @@ To run the tests: `pytest`
 - Allow multiple labels per article.
 - Read long articles in chunks.
 - Show which words DistilBERT itself focused on (attention visualisation).
-- Deploy online (see `DEPLOY_CODEX_PROMPT.md`).
+- Move the AI to a server that never sleeps (Render's free plan sleeps after 15 minutes).
 
 ---
 

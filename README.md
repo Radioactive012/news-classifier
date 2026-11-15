@@ -8,6 +8,12 @@ Paste a news article into the web app and a fine-tuned **DistilBERT** neural net
 
 ![Model performance page](docs/screenshots/performance.jpg)
 
+## Live demo
+
+**https://news-classifier.assetdesk-archive-20261016.workers.dev**
+
+The AI runs on Render's free plan, which sleeps after 15 minutes without visitors. The first visit after that takes about a minute while it wakes up (the header says "Connecting…"); after that each article takes about 0.1 s. Open the site a couple of minutes before a demo.
+
 ## Results
 
 Trained and tested on two datasets: **BBC News** (full articles, 2004–05) and **HuffPost** (headlines and summaries, 2012–22). The 1,211 test articles were never used for training. See [reports/REPORT.md](reports/REPORT.md) for the full write-up.
@@ -93,6 +99,38 @@ npm --prefix frontend run dev    # then open http://localhost:5173
 ```
 
 The frontend reads the API address from `VITE_API_URL` (default `http://localhost:8000` in development).
+
+## Deploying
+
+The live site has two parts:
+
+| Part | Host | Cost |
+|---|---|---|
+| Website (`frontend/`) | Cloudflare Workers static assets | Free |
+| AI API (`backend/`) | Render web service, free plan, Singapore | Free (sleeps when idle) |
+| Model files | Public Hugging Face repo [`Radioactive012/news-classifier-models`](https://huggingface.co/Radioactive012/news-classifier-models) | Free |
+
+Render's free plan has 512 MB of memory, and the PyTorch server needs about 800 MB. So the online server uses **ONNX Runtime** with an int8-compressed copy of DistilBERT instead (67 MB instead of 256 MB, about 400 MB of memory). It scores 89.7% on the test set against 89.8% for the full PyTorch model. The backend picks ONNX automatically when PyTorch is not installed; locally you can force it with `NEWS_ENGINE=onnx`.
+
+**Update the AI after retraining:**
+
+```sh
+python training/export_onnx.py                       # writes models/distilbert_onnx/
+hf upload Radioactive012/news-classifier-models models/distilbert_onnx distilbert_onnx
+hf upload Radioactive012/news-classifier-models models/baseline.joblib baseline.joblib
+```
+
+Then trigger a new deploy on Render (it downloads the models during the build with `scripts/download_models.py`). Any push to `main` also redeploys it automatically. Build and start commands are in `render.yaml`.
+
+**Update the website:**
+
+```sh
+cd frontend
+VITE_API_URL=https://news-classifier-api-j5qn.onrender.com npm run build
+npx wrangler deploy
+```
+
+The API only accepts browser requests from the website's address, set by the `ALLOWED_ORIGINS` environment variable on Render.
 
 ## API
 

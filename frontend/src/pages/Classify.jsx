@@ -224,7 +224,7 @@ function Hero() {
   ]
   return (
     <section className="relative">
-      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 hidden xl:block" aria-hidden="true">
         {stickers.map((s, i) => (
           <span
             key={s.emoji}
