@@ -24,6 +24,15 @@ async function request(path, options) {
 }
 
 export const getHealth = () => request('/health')
+
+// The free Render server sleeps when idle and only wakes for direct requests,
+// not ones relayed through the Cloudflare site. So while the AI is asleep the
+// browser pings it directly. 'no-cors' means we never read the reply; the
+// request itself is what wakes the server.
+const WAKE_URL = import.meta.env.VITE_WAKE_URL
+export function wakeServer() {
+  if (WAKE_URL) fetch(WAKE_URL, { mode: 'no-cors', cache: 'no-store' }).catch(() => {})
+}
 export const getMetrics = () => request('/metrics')
 export const classify = (text, model) =>
   request('/predict', {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
-import { getHealth } from './api.js'
+import { getHealth, wakeServer } from './api.js'
 import Classify from './pages/Classify.jsx'
 import Performance from './pages/Performance.jsx'
 import About from './pages/About.jsx'
@@ -34,6 +34,7 @@ export default function App() {
       } catch (error) {
         setHealth({ error: error.message })
         setFailingSince((since) => since ?? Date.now())
+        wakeServer()
       }
       if (!stopped) timer = setTimeout(check, ok ? 15000 : 4000)
     }
