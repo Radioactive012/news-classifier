@@ -4,7 +4,6 @@ import { getHealth, wakeServer } from './api.js'
 import Classify from './pages/Classify.jsx'
 import Performance from './pages/Performance.jsx'
 import About from './pages/About.jsx'
-import WakeUpPanel from './components/WakeUpPanel.jsx'
 
 const LINKS = [
   { to: '/', label: 'Classify', emoji: '🔍' },
@@ -15,9 +14,6 @@ const LINKS = [
 export default function App() {
   // null = still checking, otherwise the /health response or an error
   const [health, setHealth] = useState(null)
-  // 'hidden' | 'waking' | 'ready' | 'dismissed': the wake-up game panel
-  const [panel, setPanel] = useState('hidden')
-  const ready = Boolean(health && !health.error)
   // When the health checks started failing, to tell "waking up" from "down".
   const [failingSince, setFailingSince] = useState(null)
 
@@ -45,27 +41,8 @@ export default function App() {
     }
   }, [])
 
-  // A sleeping free server answers slowly. Only open the game if the AI is
-  // still not ready after 1.5 s, so it never flashes up when the server is awake.
-  useEffect(() => {
-    if (ready || panel !== 'hidden') return
-    const timer = setTimeout(() => setPanel('waking'), 1500)
-    return () => clearTimeout(timer)
-  }, [ready, panel])
-
-  // When the AI comes online, show "awake" for a moment, then close the game.
-  useEffect(() => {
-    if (ready && panel === 'waking') setPanel('ready')
-    if (panel !== 'ready') return
-    const timer = setTimeout(() => setPanel('dismissed'), 2000)
-    return () => clearTimeout(timer)
-  }, [ready, panel])
-
   return (
     <div className="flex min-h-screen flex-col">
-      {(panel === 'waking' || panel === 'ready') && (
-        <WakeUpPanel ready={ready} failed={Boolean(health?.error)} onClose={() => setPanel('dismissed')} />
-      )}
       <header className="sticky top-0 z-20 border-b-2 border-ink bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
           <NavLink to="/" className="group flex items-center gap-2.5">
