@@ -4,6 +4,7 @@ import { getHealth, wakeServer } from './api.js'
 import Classify from './pages/Classify.jsx'
 import Performance from './pages/Performance.jsx'
 import About from './pages/About.jsx'
+import LoadingWindow from './components/LoadingWindow.jsx'
 
 const LINKS = [
   { to: '/', label: 'Classify', emoji: '🔍' },
@@ -16,6 +17,10 @@ export default function App() {
   const [health, setHealth] = useState(null)
   // When the health checks started failing, to tell "waking up" from "down".
   const [failingSince, setFailingSince] = useState(null)
+  // Render is live when /health answers. Until then show the loading window.
+  const ready = Boolean(health && !health.error)
+  // 'hidden' | 'waking' | 'ready' | 'dismissed'
+  const [loading, setLoading] = useState('hidden')
 
   useEffect(() => {
     let timer
@@ -41,8 +46,27 @@ export default function App() {
     }
   }, [])
 
+  // Open the window only if the AI has not answered within 1.5 s, so it never
+  // flashes up when the server is already awake.
+  useEffect(() => {
+    if (ready || loading !== 'hidden') return
+    const timer = setTimeout(() => setLoading('waking'), 1500)
+    return () => clearTimeout(timer)
+  }, [ready, loading])
+
+  // When the AI goes live, show "ready" for a moment, then close.
+  useEffect(() => {
+    if (ready && loading === 'waking') setLoading('ready')
+    if (loading !== 'ready') return
+    const timer = setTimeout(() => setLoading('dismissed'), 1500)
+    return () => clearTimeout(timer)
+  }, [ready, loading])
+
   return (
     <div className="flex min-h-screen flex-col">
+      {(loading === 'waking' || loading === 'ready') && (
+        <LoadingWindow ready={ready} onClose={() => setLoading('dismissed')} />
+      )}
       <header className="sticky top-0 z-20 border-b-2 border-ink bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
           <NavLink to="/" className="group flex items-center gap-2.5">
