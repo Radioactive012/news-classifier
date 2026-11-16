@@ -436,8 +436,10 @@ flowchart LR
 >
 > Result: about **400 MB** of memory, and accuracy only drops from 89.8% to 89.7% (2 articles out of 1,211). Good viva point: it shows you know the trade-off between model size and accuracy.
 
-> [!warning] The 1-minute wait
-> The free server **sleeps after 15 minutes** without visitors. The first visit after that takes about a minute while it wakes up. **Open the site 2–3 minutes before your demo.** Or run it locally with `./start.sh` as a backup.
+> [!tip] Keeping the free server awake
+> Render's free server **sleeps after 15 minutes** without visitors, and waking it takes about a minute. To avoid that, a free **Cloudflare scheduled task** (a "cron trigger") pings it **every 10 minutes**, so it never gets the chance to sleep. Render's free plan includes 750 hours a month, enough for one server running all month.
+>
+> As a backup, if the server ever is asleep, the site shows a **"Waking up the AI…"** window and the visitor's browser pings Render directly to start it. The window closes by itself once `/health` answers. Running it locally with `./start.sh` is a last-resort backup for the demo.
 
 ## 13. Tools & tech, and why each was chosen
 
@@ -469,7 +471,7 @@ flowchart LR
 - Allow multiple labels per article.
 - Read long articles in chunks.
 - Show which words DistilBERT itself focused on (attention visualisation).
-- Move the AI to a server that never sleeps (Render's free plan sleeps after 15 minutes).
+- Move the AI to a paid server for guaranteed uptime (the free one is kept awake by a scheduled ping).
 
 ---
 

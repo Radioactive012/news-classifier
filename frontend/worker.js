@@ -43,4 +43,15 @@ export default {
 
     return env.ASSETS.fetch(request)
   },
+
+  // Runs every 10 minutes (see "triggers" in wrangler.jsonc). Render's free
+  // server sleeps after 15 minutes without requests, so this ping keeps it
+  // awake and visitors never wait for it to start.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      fetch(`${API_ORIGIN}/health`, { headers: { 'user-agent': 'news-classifier-keepalive' } })
+        .then((response) => console.log(`keep-awake ping: ${response.status}`))
+        .catch((error) => console.log(`keep-awake ping failed: ${error}`)),
+    )
+  },
 }

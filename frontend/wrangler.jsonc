@@ -6,6 +6,10 @@
   "name": "news-classifier",
   "compatibility_date": "2026-11-13",
   "main": "worker.js",
+  // Ping the AI server every 10 minutes so Render's free plan never puts it
+  // to sleep (it sleeps after 15 idle minutes). Free on Cloudflare.
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "observability": { "enabled": true },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

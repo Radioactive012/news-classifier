@@ -12,7 +12,7 @@ Paste a news article into the web app and a fine-tuned **DistilBERT** neural net
 
 **https://news-classifier.assetdesk-archive-20261016.workers.dev**
 
-The AI runs on Render's free plan, which sleeps after 15 minutes without visitors. The first visit after that takes about a minute while it wakes up (the header says "Connecting…"); after that each article takes about 0.1 s. Open the site a couple of minutes before a demo.
+The AI runs on Render's free plan, which normally sleeps after 15 minutes without visitors. A free Cloudflare scheduled task (`scheduled()` in `frontend/worker.js`, every 10 minutes) pings it so it stays awake, and each article takes about 0.1 s. If it ever is asleep (for example right after a redeploy fails), the site shows a "Waking up the AI…" window and the browser wakes it in about a minute.
 
 ## Results
 
