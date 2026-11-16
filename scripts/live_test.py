@@ -113,7 +113,7 @@ EDGE_CASES = [
     ("Empty text", "", "422"),
     ("Only spaces and newlines", "   \n\n\t  ", "422"),
     ("19 words (one short)", " ".join(["word"] * 19), "422"),
-    ("Exactly 20 words", "The team won the cup final after a dramatic penalty shootout that thrilled fans in the packed stadium tonight", "200"),
+    ("Exactly 20 words", "The home team won the cup final after a dramatic penalty shootout that thrilled fans in the packed stadium tonight", "200"),
     ("Headline only, short", "Arsenal beat Chelsea", "422"),
     ("Very long article (truncated to 512 tokens)", (SPORT + " ") * 60, "200"),
     ("Over 50,000 characters", "word " * 12_000, "413"),

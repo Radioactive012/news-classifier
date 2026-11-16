@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from .classifier import ROOT, Classifier, ModelNotAvailable
+from .classifier import ROOT, Classifier, ModelNotAvailable, release_memory
 
 REPORT_DIR = ROOT / "reports"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
@@ -92,6 +92,13 @@ def health():
     return {"status": "ok", "models": classifier.available, "labels": classifier.labels, "engine": classifier.engine}
 
 
+def predict_and_tidy(text: str, model: str) -> dict:
+    try:
+        return classifier.predict(text, model)
+    finally:
+        release_memory()
+
+
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     text = request.text.strip()
@@ -102,7 +109,7 @@ async def predict(request: PredictRequest):
     words = len(text.split())
     if words < MIN_WORDS:
         raise HTTPException(422, f"The text is too short ({words} words). Paste at least {MIN_WORDS} words of an article.")
-    job = asyncio.get_running_loop().run_in_executor(MODEL_THREAD, classifier.predict, text, request.model)
+    job = asyncio.get_running_loop().run_in_executor(MODEL_THREAD, predict_and_tidy, text, request.model)
     try:
         return await asyncio.wait_for(job, timeout=60)
     except ModelNotAvailable as error:

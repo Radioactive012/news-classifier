@@ -1,8 +1,10 @@
 """Loads the trained models once and turns article text into predictions."""
 
+import ctypes
 import importlib.util
 import json
 import os
+import sys
 import re
 import time
 from pathlib import Path
@@ -28,6 +30,21 @@ MODEL_NAMES = {
 RELATED_THRESHOLD = 0.08
 
 
+# The tokenizer would otherwise start its own pool of threads.
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+
+def release_memory() -> None:
+    """On Linux, hand memory freed after a prediction back to the system.
+    Without this, Linux's allocator keeps it, and on Render's 512 MB free plan
+    the server's memory crept up with every request."""
+    if sys.platform.startswith("linux"):
+        try:
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except OSError:
+            pass
+
+
 class ModelNotAvailable(Exception):
     pass
 
@@ -38,6 +55,7 @@ class Classifier:
         self.tokenizer = None
         self.bert = None
         self.engine = None  # "pytorch" or "onnx"
+        self._vocabulary = None
         self.max_length = 256
         self.labels: list[str] = []
         self.load()
@@ -80,6 +98,7 @@ class Classifier:
         self.tokenizer.enable_truncation(self.max_length)
         options = onnxruntime.SessionOptions()
         options.intra_op_num_threads = 1  # small servers have a fraction of one CPU
+        options.inter_op_num_threads = 1
         options.enable_cpu_mem_arena = False  # keeps memory low on the 512 MB free plan
         options.enable_mem_pattern = False  # do not keep pre-planned buffers around
         self.bert = onnxruntime.InferenceSession(str(ONNX_DIR / "model.onnx"), options, providers=["CPUExecutionProvider"])
@@ -162,7 +181,9 @@ class Classifier:
         weights = logreg.coef_[list(logreg.classes_).index(category)]
         contribution = row.multiply(weights).tocsr()
         order = np.argsort(contribution.data)[::-1]
-        vocabulary = vectorizer.get_feature_names_out()
+        if self._vocabulary is None:  # build the 60,000-word list once, not per request
+            self._vocabulary = vectorizer.get_feature_names_out()
+        vocabulary = self._vocabulary
         terms: list[str] = []
         for i in order:
             if contribution.data[i] <= 0 or len(terms) == limit:
