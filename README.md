@@ -152,6 +152,7 @@ curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
 ```sh
 pytest                                # API tests
 python scripts/fetch_live_articles.py # classify today's BBC articles -> reports/manual_test.md
+python scripts/live_test.py           # test the LIVE site: today's BBC/Guardian/Hindu articles + 21 edge cases -> reports/live_test.md
 ```
 
 ## Limitations

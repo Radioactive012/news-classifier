@@ -49,10 +49,16 @@ def get(url: str) -> str:
 
 
 def article_text(url: str) -> str:
-    """Body paragraphs of an article page (inside <article> when there is one)."""
+    """Body paragraphs of an article page. Uses the outlet's article-body
+    container (The Hindu: id="content-body-…") or <article>, so menus,
+    newsletter boxes and comment rules are left out."""
     html = get(url)
-    match = re.search(r"<article.*?</article>", html, flags=re.S)
-    paragraphs = re.findall(r"<p[^>]*>(.*?)</p>", match.group(0) if match else html, flags=re.S)
+    match = re.search(r'<div[^>]+id="content-body-\d+".*?</div>\s*</div>', html, flags=re.S) or re.search(
+        r"<article.*?</article>", html, flags=re.S
+    )
+    if not match:
+        return ""  # no recognisable article body: skip rather than send page clutter
+    paragraphs = re.findall(r"<p[^>]*>(.*?)</p>", match.group(0), flags=re.S)
     kept = []
     for paragraph in paragraphs:
         text = unescape(re.sub(r"<[^>]+>", "", paragraph)).strip()
