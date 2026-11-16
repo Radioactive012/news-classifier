@@ -4,9 +4,10 @@ Run from the project root:  uvicorn backend.main:app --reload --port 8000
 Interactive API docs:       http://localhost:8000/docs
 """
 
+import asyncio
 import json
 import os
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -26,10 +27,12 @@ MAX_CHARS = 50_000
 # fill the 512 MB server's memory with a huge upload (50,000 characters of
 # text is well under 200 KB even with the JSON around it).
 MAX_BODY_BYTES = 200_000
-# Run one prediction at a time: two long articles at once used ~500 MB and
-# got the server killed on the 512 MB free plan. Each takes under a second,
-# so others just wait their turn.
-PREDICT_SLOTS = threading.BoundedSemaphore(1)
+# All predictions run one at a time on ONE dedicated thread. On Linux, every
+# thread gets its own memory pool, and spreading predictions over the web
+# server's many threads made memory grow with each request until Render's
+# 512 MB free plan killed the server. Each prediction takes under a second,
+# so other requests just wait their turn.
+MODEL_THREAD = ThreadPoolExecutor(max_workers=1, thread_name_prefix="model")
 
 classifier: Classifier | None = None
 
@@ -90,7 +93,7 @@ def health():
 
 
 @app.post("/predict", response_model=PredictResponse)
-def predict(request: PredictRequest):
+async def predict(request: PredictRequest):
     text = request.text.strip()
     if len(text) > MAX_CHARS:
         raise HTTPException(413, f"The article is too long. Paste at most {MAX_CHARS:,} characters.")
@@ -99,14 +102,13 @@ def predict(request: PredictRequest):
     words = len(text.split())
     if words < MIN_WORDS:
         raise HTTPException(422, f"The text is too short ({words} words). Paste at least {MIN_WORDS} words of an article.")
-    if not PREDICT_SLOTS.acquire(timeout=30):
-        raise HTTPException(503, "The AI is busy. Please try again in a moment.")
+    job = asyncio.get_running_loop().run_in_executor(MODEL_THREAD, classifier.predict, text, request.model)
     try:
-        return classifier.predict(text, request.model)
+        return await asyncio.wait_for(job, timeout=60)
     except ModelNotAvailable as error:
         raise HTTPException(503, str(error))
-    finally:
-        PREDICT_SLOTS.release()
+    except TimeoutError:
+        raise HTTPException(503, "The AI is busy. Please try again in a moment.")
 
 
 @app.get("/metrics")

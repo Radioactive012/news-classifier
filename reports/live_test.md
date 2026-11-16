@@ -30,7 +30,7 @@ Run on 16 November 2026 against https://news-classifier.assetdesk-archive-202610
 | BBC | entertainment | [Tourette's film I Swear wins three Scottish Baftas](https://www.bbc.co.uk/news/articles/crgqx11wkzy8o?at_medium=RSS&at_campaign=rss) | ✅ entertainment (96%) |  |
 | Guardian | sport | [French football head Philippe Diallo is shock contender to fight Infantino for Fifa job](https://www.theguardian.com/football/2026/nov/16/philippe-diallo-fifa-gianni-infantino-president-french-football-federation) | ❌ tech (50%) | sport |
 | Guardian | sport | [Jay Shah re-elected unopposed as ICC chair after board clears way for bigger IPL](https://www.theguardian.com/sport/2026/nov/16/jay-shah-icc-chair-bigger-ipl-cricket) | ✅ sport (67%) | business, politics |
-| Guardian | sport | [Moeen Ali warns England ‘cannot win the World Cup’ by sidelining Adil Rashid](https://www.theguardian.com/sport/2026/nov/16/moeen-ali-warns-england-world-cup-sidelining-adil-rashid) | ⚠️ HTTP 502 |  |
+| Guardian | sport | [Moeen Ali warns England ‘cannot win the World Cup’ by sidelining Adil Rashid](https://www.theguardian.com/sport/2026/nov/16/moeen-ali-warns-england-world-cup-sidelining-adil-rashid) | ✅ sport (99%) |  |
 | Guardian | politics | [Barristers could be barred from practice over use of rape myths, warns justice secretary](https://www.theguardian.com/law/2026/nov/16/barristers-barred-practice-rape-myths-russell-brand-trial) | ⚠️ HTTP 502 |  |
 | Guardian | politics | [Burnham pledges early intervention and ‘benefits backstop’ to tackle youth jobs crisis](https://www.theguardian.com/society/2026/nov/15/no-free-lunch-milburn-mcfadden-kuenssberg-uk-benefits-youth-unemployment-neet) | ⚠️ HTTP 502 |  |
 | Guardian | politics | [Andy Burnham to say Brexit ‘has not worked’ and he will sign new deal with EU](https://www.theguardian.com/politics/2026/nov/16/andy-burnham-brexit-has-not-worked-sign-new-deal-with-eu) | ⚠️ HTTP 502 |  |
@@ -42,7 +42,7 @@ Run on 16 November 2026 against https://news-classifier.assetdesk-archive-202610
 | Guardian | tech | [160 questions, only one wrong: top scorer in South Korea tax exam admits AI cheating](https://www.theguardian.com/technology/2026/nov/15/ai-cheating-south-korea-college-entrance-exam) | ⚠️ HTTP 502 |  |
 | Guardian | entertainment | [The Nice Ones review – invasion of the sunny personality snatchers](https://www.theguardian.com/film/2026/nov/16/the-nice-ones-review-peter-stylianou) | ⚠️ HTTP 502 |  |
 | Guardian | entertainment | [‘Partly the movie’s fault I’m a writer at all’: why Wonder Boys is my feelgood movie](https://www.theguardian.com/film/2026/nov/16/wonder-boys-curtis-hanson-feelgood-movie) | ⚠️ HTTP 502 |  |
-| Guardian | entertainment | [Accidents, emotional affairs and impromptu Leonard Cohen dancing - My Wife Cries review](https://www.theguardian.com/film/2026/nov/16/my-wife-cries-review-angela-schanelec) | ✅ entertainment (83%) | tech |
+| Guardian | entertainment | [Accidents, emotional affairs and impromptu Leonard Cohen dancing - My Wife Cries review](https://www.theguardian.com/film/2026/nov/16/my-wife-cries-review-angela-schanelec) | ⚠️ HTTP 502 |  |
 | The Hindu | sport | [IND vs NZ Tests: WTC hopes, Gambhir’s credibility on the line](https://www.thehindu.com/sport/cricket/ind-vs-nz-tests-wtc-hopes-gambhirs-credibility-on-the-line/article71707787.ece) | ⚠️ HTTP 502 |  |
 | The Hindu | sport | [IND vs NZ fifth ODI: Bowlers step up to lift India to 22-run win over NZ](https://www.thehindu.com/sport/cricket/india-vs-new-zealand-fifth-odi-in-mount-maunganui-on-november-15/article71703996.ece) | ⚠️ HTTP 502 |  |
 | The Hindu | sport | [Foxy and Carrina impress](https://www.thehindu.com/sport/races/horse-racing/article71707840.ece) | ⚠️ HTTP 502 |  |
@@ -58,7 +58,7 @@ Run on 16 November 2026 against https://news-classifier.assetdesk-archive-202610
 
 ## Edge cases
 
-**1 / 21** returned the expected status code.
+**10 / 21** returned the expected status code.
 
 | Input | Status | Expected | Result |
 |---|---|---|---|
@@ -117,45 +117,13 @@ Run on 16 November 2026 against https://news-classifier.assetdesk-archive-202610
   <head>
     <meta charset="utf-8">
     <meta n |
-| Hindi (non-English) | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| Mixed topic: politics + business | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| Not news: a recipe | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| Gibberish | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| Numbers only | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| One word repeated | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| Prompt injection text | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| JSON-breaking characters | ❌ 502 | 200 | <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta n |
-| GET on /predict | ❌ 502 | 405 |  |
+| Hindi (non-English) | ✅ 200 | 200 | entertainment (30%), related: business, sport, politics, tech |
+| Mixed topic: politics + business | ✅ 200 | 200 | politics (68%), related: business |
+| Not news: a recipe | ✅ 200 | 200 | business (66%), related: sport |
+| Gibberish | ✅ 200 | 200 | tech (54%), related: business, entertainment, sport |
+| Numbers only | ✅ 200 | 200 | sport (31%), related: business, entertainment, politics, tech |
+| One word repeated | ✅ 200 | 200 | sport (99%) |
+| Prompt injection text | ✅ 200 | 200 | sport (98%) |
+| JSON-breaking characters | ✅ 200 | 200 | sport (99%) |
+| GET on /predict | ✅ 405 | 405 |  |
 | 300 KB raw upload | ✅ 413 | 413 |  |

@@ -14,5 +14,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
+      # Fewer memory pools in Linux's allocator, so memory does not keep
+      # growing on the 512 MB free plan.
+      - key: MALLOC_ARENA_MAX
+        value: "2"
       - key: ALLOWED_ORIGINS
         value: https://news-classifier.assetdesk-archive-20261016.workers.dev
