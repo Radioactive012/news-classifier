@@ -81,6 +81,7 @@ class Classifier:
         options = onnxruntime.SessionOptions()
         options.intra_op_num_threads = 1  # small servers have a fraction of one CPU
         options.enable_cpu_mem_arena = False  # keeps memory low on the 512 MB free plan
+        options.enable_mem_pattern = False  # do not keep pre-planned buffers around
         self.bert = onnxruntime.InferenceSession(str(ONNX_DIR / "model.onnx"), options, providers=["CPUExecutionProvider"])
         self.engine = "onnx"
 

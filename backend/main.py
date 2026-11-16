@@ -26,8 +26,10 @@ MAX_CHARS = 50_000
 # fill the 512 MB server's memory with a huge upload (50,000 characters of
 # text is well under 200 KB even with the JSON around it).
 MAX_BODY_BYTES = 200_000
-# Run at most two predictions at once; extra requests wait their turn.
-PREDICT_SLOTS = threading.BoundedSemaphore(2)
+# Run one prediction at a time: two long articles at once used ~500 MB and
+# got the server killed on the 512 MB free plan. Each takes under a second,
+# so others just wait their turn.
+PREDICT_SLOTS = threading.BoundedSemaphore(1)
 
 classifier: Classifier | None = None
 
