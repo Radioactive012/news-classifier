@@ -25,7 +25,7 @@ Trained and tested on two datasets: **BBC News** (full articles, 2004–05) and 
 | TF-IDF + Logistic Regression (baseline) | 84.6% | 98.1% | 81.7% |
 | *Version 1 DistilBERT, trained on BBC only* | — | *98.6%* | *68.1%* |
 
-Adding modern news to the training data raised accuracy on modern news from 68% to 88% without losing anything on BBC. On 20 live BBC articles from November 2026, the combined model got 17 right (see [reports/manual_test.md](reports/manual_test.md)); the misses are stories the BBC itself filed under two sections.
+Adding modern news to the training data raised accuracy on modern news from 68% to 88% without losing anything on BBC. On 20 live BBC articles from November 2026, the combined model got 17 right (see [reports/manual_test.md](reports/manual_test.md)); the misses are stories the BBC itself filed under two sections. A larger live test on 42 articles from BBC, The Guardian and The Hindu scored 35 / 42 and passed all 21 edge cases (see [reports/live_test.md](reports/live_test.md)).
 
 ## How it works
 
@@ -48,7 +48,7 @@ news-classifier/
   backend/      main.py (API), classifier.py (model loading + prediction), tests/
   frontend/     React app (src/pages: Classify, Performance, About)
   scripts/      fetch_live_articles.py (test on today's BBC news)
-  reports/      metrics.json, confusion matrices, REPORT.md, DEMO.md, manual_test.md
+  reports/      metrics.json, confusion matrices, screenshots/, REPORT.md, DEMO.md, manual_test.md, live_test.md
   data/         dataset and splits (created by prepare_data.py, not in git)
   models/       trained models (created by training, not in git)
   start.sh      build the frontend and run everything on one port
